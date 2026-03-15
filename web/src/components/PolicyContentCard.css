@@ -1,0 +1,182 @@
+/* ========================================
+   Policy Content Card - Material Design
+   ======================================== */
+
+.info-card {
+  margin-bottom: 0;
+  border-radius: var(--md-radius-md);
+  border: none;
+  box-shadow: var(--md-elevation-1);
+}
+
+.info-card .ant-card-head-title {
+  font-weight: 500;
+}
+
+/* ========================================
+   Descriptions - Material Design
+   ======================================== */
+
+.info-card .ant-descriptions-bordered .ant-descriptions-item-label {
+  background: var(--md-surface-variant);
+  font-weight: 500;
+  color: var(--md-on-surface-variant);
+}
+
+.info-card .ant-descriptions-item-content {
+  color: var(--md-on-surface);
+}
+
+/* ========================================
+   Limit Card - Material Design
+   ======================================== */
+
+.limit-card {
+  background: var(--md-surface-variant);
+  border-radius: var(--md-radius-sm);
+  border: none;
+  transition: all var(--md-transition-normal);
+  height: 100%;
+}
+
+.limit-card:hover {
+  background: rgba(25, 118, 210, 0.04);
+  box-shadow: var(--md-elevation-1);
+}
+
+.limit-card .ant-statistic-title {
+  font-size: var(--md-font-size-sm);
+  color: var(--md-on-surface-variant);
+  font-weight: 400;
+}
+
+.limit-card .ant-statistic-content {
+  font-size: 24px;
+  font-weight: 500;
+  color: var(--md-primary);
+}
+
+.limit-card .ant-statistic-content-prefix {
+  font-size: 18px;
+  margin-right: var(--md-spacing-xs);
+}
+
+.limit-card .ant-statistic-content-suffix {
+  font-size: var(--md-font-size-sm);
+  color: var(--md-on-surface-variant);
+}
+
+.limit-card .ant-divider {
+  margin: var(--md-spacing-md) 0;
+  border-color: rgba(0, 0, 0, 0.06);
+}
+
+/* ========================================
+   Retroactive Info - Material Design
+   ======================================== */
+
+.retroactive-info {
+  margin-top: var(--md-spacing-md);
+  padding: var(--md-spacing-md);
+  background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%);
+  border-radius: var(--md-radius-sm);
+  display: flex;
+  align-items: center;
+  gap: var(--md-spacing-sm);
+  border-left: 4px solid var(--md-warning);
+  box-shadow: var(--md-elevation-1);
+}
+
+.retroactive-info .ant-tag {
+  background: var(--md-warning);
+  color: #fff;
+  border: none;
+  font-weight: 500;
+  padding: 2px 12px;
+}
+
+.retroactive-info span {
+  color: var(--md-warning);
+  font-weight: 500;
+}
+
+/* ========================================
+   Coverage Types - Material Design
+   ======================================== */
+
+.coverage-types {
+  margin-top: var(--md-spacing-md);
+}
+
+.coverage-types-label {
+  margin-right: var(--md-spacing-sm);
+  color: var(--md-on-surface-variant);
+}
+
+.coverage-types .ant-tag {
+  font-weight: 500;
+  border-radius: var(--md-radius-xs);
+  border: none;
+  background: var(--md-primary-container);
+  color: var(--md-primary-dark);
+  padding: 2px 12px;
+  margin-bottom: var(--md-spacing-xs);
+}
+
+/* ========================================
+   Special Notes - Material Design
+   ======================================== */
+
+.special-notes-text {
+  margin: var(--md-spacing-sm) 0 0;
+  padding: var(--md-spacing-md);
+  background: var(--md-surface-variant);
+  border-radius: var(--md-radius-sm);
+  color: var(--md-on-surface);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  line-height: 1.7;
+  font-size: var(--md-font-size-md);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+/* ========================================
+   Card Title Styling
+   ======================================== */
+
+.ant-card-head-title {
+  font-weight: 500;
+  font-size: var(--md-font-size-lg);
+  color: var(--md-on-surface);
+}
+
+/* ========================================
+   Row Gutter Styling
+   ======================================== */
+
+.policy-content-row {
+  row-gap: var(--md-spacing-md);
+}
+
+/* ========================================
+   Responsive Adjustments
+   ======================================== */
+
+@media (max-width: 768px) {
+  .limit-card .ant-statistic-content {
+    font-size: 20px;
+  }
+
+  .special-notes-text {
+    font-size: var(--md-font-size-sm);
+  }
+
+  .ant-row {
+    flex-direction: column;
+  }
+
+  .ant-col {
+    width: 100%;
+    max-width: 100%;
+  }
+}

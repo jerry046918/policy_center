@@ -1,0 +1,256 @@
+/* ========================================
+   Policy Detail - Material Design
+   ======================================== */
+
+.policy-detail {
+  background: transparent;
+  padding: 0;
+}
+
+/* ========================================
+   Detail Header - Material Design
+   ======================================== */
+
+.detail-header {
+  display: flex;
+  align-items: center;
+  gap: var(--md-spacing-md);
+  padding: var(--md-spacing-md) var(--md-spacing-lg);
+  background: var(--md-surface);
+  border-radius: var(--md-radius-md);
+  margin-bottom: var(--md-spacing-md);
+  box-shadow: var(--md-elevation-1);
+}
+
+.detail-header .ant-btn {
+  border-radius: var(--md-radius-sm);
+  font-weight: 500;
+  transition: all var(--md-transition-fast);
+}
+
+.detail-header .ant-btn-default:hover {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: var(--md-outline);
+  color: var(--md-on-surface);
+}
+
+.header-tags {
+  display: flex;
+  gap: var(--md-spacing-sm);
+  flex: 1;
+}
+
+.header-tags .ant-tag {
+  font-weight: 500;
+  padding: 2px 12px;
+  border-radius: var(--md-radius-xs);
+}
+
+.header-actions {
+  margin-left: auto;
+}
+
+.header-actions .ant-btn-primary {
+  box-shadow: var(--md-elevation-1);
+}
+
+.header-actions .ant-btn-primary:hover {
+  box-shadow: var(--md-elevation-2);
+}
+
+/* ========================================
+   Info Card - Material Design
+   ======================================== */
+
+.info-card {
+  margin-bottom: 0;
+  border-radius: var(--md-radius-md);
+  box-shadow: var(--md-elevation-1);
+  border: none;
+}
+
+.info-card .ant-card-head {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.info-card .ant-card-head-title {
+  font-weight: 500;
+  font-size: var(--md-font-size-lg);
+}
+
+.info-card .ant-descriptions-item-label {
+  font-weight: 500;
+  color: var(--md-on-surface-variant);
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.info-card .ant-descriptions-item-content {
+  color: var(--md-on-surface);
+}
+
+.info-card .ant-descriptions-bordered .ant-descriptions-item-label {
+  background: var(--md-surface-variant);
+}
+
+/* ========================================
+   Limit Card - Material Design
+   ======================================== */
+
+.limit-card {
+  background: var(--md-surface-variant);
+  border-radius: var(--md-radius-sm);
+  border: none;
+  transition: all var(--md-transition-normal);
+}
+
+.limit-card:hover {
+  background: rgba(25, 118, 210, 0.04);
+  box-shadow: var(--md-elevation-1);
+}
+
+.limit-card .ant-statistic-title {
+  font-size: var(--md-font-size-sm);
+  color: var(--md-on-surface-variant);
+  font-weight: 400;
+}
+
+.limit-card .ant-statistic-content {
+  font-size: 24px;
+  font-weight: 500;
+  color: var(--md-primary);
+}
+
+.limit-card .ant-divider {
+  margin: var(--md-spacing-md) 0;
+  border-color: rgba(0, 0, 0, 0.06);
+}
+
+/* ========================================
+   Retroactive Info - Material Design
+   ======================================== */
+
+.retroactive-info {
+  margin-top: var(--md-spacing-md);
+  padding: var(--md-spacing-md);
+  background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%);
+  border-radius: var(--md-radius-sm);
+  display: flex;
+  align-items: center;
+  gap: var(--md-spacing-sm);
+  border-left: 4px solid var(--md-warning);
+  box-shadow: var(--md-elevation-1);
+}
+
+.retroactive-info .ant-tag {
+  background: var(--md-warning);
+  color: #fff;
+  border: none;
+  font-weight: 500;
+}
+
+.retroactive-info span {
+  color: var(--md-warning);
+  font-weight: 500;
+}
+
+/* ========================================
+   Change Rate Info
+   ======================================== */
+
+.change-rate {
+  margin-top: var(--md-spacing-md);
+  color: var(--md-on-surface-variant);
+  font-size: var(--md-font-size-sm);
+}
+
+/* ========================================
+   Version History Timeline - Material Design
+   ======================================== */
+
+.ant-timeline-item-content {
+  font-size: var(--md-font-size-md);
+}
+
+.ant-timeline-item-tail {
+  border-left: 2px solid rgba(0, 0, 0, 0.12);
+}
+
+.ant-timeline-item-head {
+  background: var(--md-surface);
+  border: 2px solid currentColor;
+}
+
+.ant-timeline-item-content .ant-tag {
+  font-weight: 500;
+  margin-right: var(--md-spacing-xs);
+}
+
+.ant-timeline-item-content > div:last-child {
+  color: var(--md-on-surface-variant);
+}
+
+/* ========================================
+   Version History Table
+   ======================================== */
+
+.policy-detail .ant-table-wrapper {
+  border-radius: var(--md-radius-md);
+  overflow: hidden;
+}
+
+.policy-detail .ant-table-thead > tr > th {
+  background: var(--md-surface-variant);
+  font-weight: 500;
+}
+
+/* ========================================
+   Coverage Types Tags
+   ======================================== */
+
+.policy-detail .ant-tag {
+  font-weight: 500;
+  border-radius: var(--md-radius-xs);
+}
+
+/* ========================================
+   Special Notes Section
+   ======================================== */
+
+.policy-detail .special-notes-text {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  line-height: 1.7;
+  color: var(--md-on-surface-variant);
+  padding: var(--md-spacing-md);
+  background: var(--md-surface-variant);
+  border-radius: var(--md-radius-sm);
+  margin-top: var(--md-spacing-sm);
+}
+
+/* ========================================
+   Sidebar Cards - Material Design
+   ======================================== */
+
+.policy-detail .ant-col:last-child .ant-card {
+  margin-bottom: var(--md-spacing-md);
+}
+
+.policy-detail .ant-col:last-child .ant-card:last-child {
+  margin-bottom: 0;
+}
+
+/* ========================================
+   Responsive Adjustments
+   ======================================== */
+
+@media (max-width: 992px) {
+  .policy-detail .ant-row {
+    flex-direction: column;
+  }
+
+  .policy-detail .ant-col {
+    width: 100%;
+    max-width: 100%;
+    margin-bottom: var(--md-spacing-md);
+  }
+}

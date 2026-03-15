@@ -1,0 +1,273 @@
+/* ========================================
+   Main Layout - Material Design
+   ======================================== */
+
+.sider {
+  background: linear-gradient(180deg, #1a237e 0%, #283593 100%);
+  box-shadow: var(--md-elevation-3);
+  z-index: 100;
+}
+
+/* Logo Area */
+.logo {
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  background: rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  transition: all var(--md-transition-normal);
+}
+
+.logo:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+/* Navigation Menu - Material Design */
+.sider .ant-menu {
+  background: transparent;
+  border: none;
+}
+
+.sider .ant-menu-item,
+.sider .ant-menu-submenu-title {
+  margin: 4px 8px;
+  border-radius: var(--md-radius-sm);
+  height: 44px;
+  line-height: 44px;
+  transition: all var(--md-transition-fast);
+}
+
+.sider .ant-menu-item:hover,
+.sider .ant-menu-submenu-title:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.sider .ant-menu-item-selected {
+  background: rgba(255, 255, 255, 0.2) !important;
+  box-shadow: inset 4px 0 0 0 #fff;
+}
+
+.sider .ant-menu-item-selected::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 24px;
+  background: #fff;
+  border-radius: 0 2px 2px 0;
+}
+
+/* Submenu styling */
+.sider .ant-menu-sub {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: var(--md-radius-sm);
+  margin: 4px 0;
+}
+
+.sider .ant-menu-sub .ant-menu-item {
+  height: 40px;
+  line-height: 40px;
+  padding-left: 48px !important;
+}
+
+/* ========================================
+   Header - Material Design
+   ======================================== */
+
+.header {
+  background: var(--md-surface);
+  padding: 0 var(--md-spacing-lg);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: var(--md-elevation-2);
+  position: sticky;
+  top: 0;
+  z-index: 99;
+  height: 64px;
+}
+
+/* Collapse Trigger Button */
+.trigger {
+  font-size: 20px;
+  padding: 8px 12px;
+  border-radius: var(--md-radius-sm);
+  color: var(--md-on-surface-variant);
+  transition: all var(--md-transition-fast);
+  position: relative;
+  overflow: hidden;
+}
+
+.trigger:hover {
+  background: rgba(25, 118, 210, 0.08);
+  color: var(--md-primary);
+}
+
+.trigger::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--md-primary);
+  opacity: 0;
+  transition: opacity var(--md-transition-fast);
+  pointer-events: none;
+}
+
+.trigger:active::after {
+  opacity: 0.12;
+}
+
+/* Header Right Section */
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: var(--md-spacing-sm);
+}
+
+/* Notification Button */
+.header-right .ant-btn {
+  border-radius: var(--md-radius-full);
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--md-on-surface-variant);
+  transition: all var(--md-transition-fast);
+}
+
+.header-right .ant-btn:hover {
+  background: rgba(0, 0, 0, 0.08);
+  color: var(--md-on-surface);
+}
+
+/* User Info Dropdown */
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: var(--md-spacing-sm);
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: var(--md-radius-full);
+  transition: all var(--md-transition-fast);
+  position: relative;
+  overflow: hidden;
+}
+
+.user-info:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.user-info::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--md-primary);
+  opacity: 0;
+  transition: opacity var(--md-transition-fast);
+  pointer-events: none;
+}
+
+.user-info:active::after {
+  opacity: 0.12;
+}
+
+.username {
+  color: var(--md-on-surface);
+  font-weight: 500;
+  font-size: var(--md-font-size-md);
+}
+
+.user-info .ant-avatar {
+  background: var(--md-primary);
+}
+
+/* ========================================
+   Content Area
+   ======================================== */
+
+.content {
+  margin: var(--md-spacing-lg);
+  padding: var(--md-spacing-lg);
+  background: var(--md-surface);
+  border-radius: var(--md-radius-md);
+  min-height: calc(100vh - 64px - 48px);
+  box-shadow: var(--md-elevation-1);
+}
+
+/* ========================================
+   Dropdown Menu - Material Design
+   ======================================== */
+
+.ant-dropdown-menu {
+  border-radius: var(--md-radius-sm);
+  box-shadow: var(--md-elevation-3);
+  padding: var(--md-spacing-xs);
+  border: none;
+  min-width: 160px;
+}
+
+.ant-dropdown-menu-item {
+  border-radius: var(--md-radius-xs);
+  padding: 8px 12px;
+  margin: 2px 0;
+  transition: all var(--md-transition-fast);
+}
+
+.ant-dropdown-menu-item:hover {
+  background: rgba(25, 118, 210, 0.08);
+  color: var(--md-primary);
+}
+
+.ant-dropdown-menu-item .anticon {
+  margin-right: var(--md-spacing-sm);
+}
+
+.ant-dropdown-menu-divider {
+  margin: var(--md-spacing-xs) 0;
+  background: rgba(0, 0, 0, 0.06);
+}
+
+/* ========================================
+   Responsive Adjustments
+   ======================================== */
+
+@media (max-width: 768px) {
+  .header {
+    padding: 0 var(--md-spacing-md);
+  }
+
+  .content {
+    margin: var(--md-spacing-md);
+    padding: var(--md-spacing-md);
+  }
+
+  .username {
+    display: none;
+  }
+}
+
+/* ========================================
+   Sider Collapsed State
+   ======================================== */
+
+.sider.ant-layout-sider-collapsed .logo {
+  font-size: 24px;
+  letter-spacing: 0;
+}
+
+.sider.ant-layout-sider-collapsed .ant-menu-item,
+.sider.ant-layout-sider-collapsed .ant-menu-submenu-title {
+  padding: 0 calc(50% - 22px / 2);
+}
+
+.sider.ant-layout-sider-collapsed .ant-menu-item-selected::before {
+  display: none;
+}

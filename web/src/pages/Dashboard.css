@@ -1,0 +1,237 @@
+/* ========================================
+   Dashboard - Material Design
+   ======================================== */
+
+.dashboard {
+  padding: 0;
+}
+
+.dashboard h4 {
+  margin-bottom: var(--md-spacing-md);
+  font-weight: 500;
+  color: var(--md-on-surface);
+}
+
+/* ========================================
+   Statistic Cards - Material Design
+   ======================================== */
+
+.stat-card {
+  text-align: center;
+  cursor: pointer;
+  transition: all var(--md-transition-normal);
+  border: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--md-primary);
+  opacity: 0;
+  transition: opacity var(--md-transition-fast);
+  pointer-events: none;
+}
+
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--md-elevation-3);
+}
+
+.stat-card:hover::before {
+  opacity: 0.04;
+}
+
+.stat-card:active {
+  transform: translateY(-2px);
+  box-shadow: var(--md-elevation-2);
+}
+
+.stat-card .ant-statistic-title {
+  font-size: var(--md-font-size-md);
+  color: var(--md-on-surface-variant);
+  font-weight: 400;
+  margin-bottom: var(--md-spacing-xs);
+}
+
+.stat-card .ant-statistic-content {
+  font-size: 32px;
+  font-weight: 500;
+}
+
+.stat-card .ant-statistic-content-prefix {
+  margin-right: var(--md-spacing-xs);
+  font-size: 24px;
+}
+
+.stat-card .ant-statistic-content-suffix {
+  font-size: var(--md-font-size-lg);
+  color: var(--md-on-surface-variant);
+}
+
+.stat-card .ant-badge {
+  width: 100%;
+}
+
+.stat-card .ant-badge .ant-statistic {
+  width: 100%;
+}
+
+/* ========================================
+   Card Headers - Material Design
+   ======================================== */
+
+.ant-card-head-title {
+  font-weight: 500;
+  font-size: var(--md-font-size-lg);
+}
+
+.ant-card-extra {
+  font-size: var(--md-font-size-md);
+}
+
+.ant-card-extra a {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--md-spacing-xs);
+  color: var(--md-primary);
+  transition: all var(--md-transition-fast);
+}
+
+.ant-card-extra a:hover {
+  color: var(--md-primary-dark);
+  text-decoration: underline;
+}
+
+/* ========================================
+   Pending Review List - Material Design
+   ======================================== */
+
+.pending-review-item {
+  cursor: pointer;
+  transition: background-color var(--md-transition-fast);
+  border-radius: var(--md-radius-sm);
+  padding: var(--md-spacing-md);
+  margin: 0 calc(-1 * var(--md-spacing-lg));
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.pending-review-item:last-child {
+  border-bottom: none;
+}
+
+.pending-review-item:hover {
+  background-color: rgba(25, 118, 210, 0.04);
+}
+
+.pending-review-item:active {
+  background-color: rgba(25, 118, 210, 0.08);
+}
+
+.pending-review-item .review-title {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: inline-block;
+  font-weight: 500;
+}
+
+.pending-review-item .ant-list-item-meta-description {
+  font-size: var(--md-font-size-sm);
+}
+
+/* ========================================
+   SLA Status Colors
+   ======================================== */
+
+.sla-overdue {
+  color: var(--md-error);
+}
+
+.sla-warning {
+  color: var(--md-warning);
+}
+
+.sla-normal {
+  color: var(--md-success);
+}
+
+/* ========================================
+   Alert Card - Material Design
+   ======================================== */
+
+.dashboard .ant-alert {
+  border-radius: var(--md-radius-sm);
+  border: none;
+  box-shadow: var(--md-elevation-1);
+  margin-bottom: var(--md-spacing-md);
+}
+
+.dashboard .ant-alert-message {
+  font-weight: 500;
+}
+
+/* ========================================
+   Empty State - Material Design
+   ======================================== */
+
+.dashboard .ant-empty {
+  padding: var(--md-spacing-xl) 0;
+}
+
+.dashboard .ant-empty-description {
+  color: var(--md-on-surface-variant);
+}
+
+/* ========================================
+   Warning List Items - Retroactive Policies
+   ======================================== */
+
+.dashboard .ant-list-item-meta-title {
+  font-weight: 500;
+  color: var(--md-on-surface);
+}
+
+.dashboard .ant-list-item-meta-description {
+  color: var(--md-on-surface-variant);
+}
+
+.dashboard .ant-list-item-action {
+  margin-left: var(--md-spacing-lg);
+}
+
+.dashboard .ant-list-item-action li {
+  padding: 0 var(--md-spacing-sm);
+}
+
+/* ========================================
+   Icon Styling
+   ======================================== */
+
+.dashboard .anticon {
+  vertical-align: middle;
+}
+
+/* ========================================
+   Responsive Adjustments
+   ======================================== */
+
+@media (max-width: 1200px) {
+  .stat-card .ant-statistic-content {
+    font-size: 28px;
+  }
+}
+
+@media (max-width: 768px) {
+  .stat-card .ant-statistic-content {
+    font-size: 24px;
+  }
+
+  .pending-review-item {
+    margin: 0 calc(-1 * var(--md-spacing-md));
+    padding: var(--md-spacing-sm) var(--md-spacing-md);
+  }
+}

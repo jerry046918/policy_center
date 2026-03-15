@@ -1,0 +1,244 @@
+/* ========================================
+   Raw Evidence Card - Material Design
+   ======================================== */
+
+.evidence-card {
+  border-radius: var(--md-radius-md);
+  border: none;
+  box-shadow: var(--md-elevation-1);
+}
+
+.evidence-card .ant-card-head-title {
+  font-weight: 500;
+}
+
+/* ========================================
+   Evidence Fields
+   ======================================== */
+
+.evidence-field {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--md-spacing-sm);
+  margin-bottom: var(--md-spacing-md);
+  min-width: 0; /* 关键：允许flex子元素收缩 */
+}
+
+.evidence-field:last-child {
+  margin-bottom: 0;
+}
+
+.evidence-label {
+  font-weight: 500;
+  color: var(--md-on-surface-variant);
+  white-space: nowrap;
+  flex-shrink: 0; /* 标签不收缩 */
+  min-width: 70px;
+}
+
+.evidence-value {
+  color: var(--md-on-surface);
+  word-break: break-all;
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+/* ========================================
+   Evidence Link - 修复换行和省略
+   ======================================== */
+
+.evidence-link {
+  display: flex;
+  align-items: flex-start;
+  color: var(--md-primary);
+  transition: all var(--md-transition-fast);
+  padding: 2px 6px;
+  border-radius: var(--md-radius-xs);
+  text-decoration: none;
+  flex: 1;
+  min-width: 0; /* 关键：允许收缩 */
+  overflow: hidden;
+}
+
+.evidence-link:hover {
+  background: rgba(25, 118, 210, 0.08);
+  color: var(--md-primary-dark);
+}
+
+.evidence-link .anticon {
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+
+.evidence-url {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+  display: block;
+}
+
+/* 悬停时显示完整URL */
+.evidence-link:hover .evidence-url,
+.evidence-link:focus .evidence-url {
+  white-space: normal;
+  word-break: break-all;
+  overflow-wrap: break-word;
+}
+
+/* ========================================
+   Extracted Text Container
+   ======================================== */
+
+.extracted-text-container {
+  margin-top: var(--md-spacing-md);
+  padding-top: var(--md-spacing-md);
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.extracted-text-label {
+  font-weight: 500;
+  color: var(--md-on-surface-variant);
+  margin-bottom: var(--md-spacing-sm);
+}
+
+.extracted-text {
+  max-height: 300px;
+  overflow: auto;
+  background: var(--md-surface-variant);
+  padding: var(--md-spacing-md);
+  border-radius: var(--md-radius-sm);
+  font-size: var(--md-font-size-sm);
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  word-break: break-word;
+  font-family: 'Roboto Mono', 'Consolas', 'Monaco', monospace;
+  color: var(--md-on-surface);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+/* Custom scrollbar for extracted text */
+.extracted-text::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.extracted-text::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+.extracted-text::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ========================================
+   Evidence Collapse - Material Design
+   ======================================== */
+
+.evidence-collapse {
+  border: none;
+  background: transparent;
+}
+
+.evidence-collapse .ant-collapse-item {
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: var(--md-radius-sm);
+  margin-bottom: var(--md-spacing-sm);
+  overflow: hidden;
+}
+
+.evidence-collapse .ant-collapse-item:last-child {
+  margin-bottom: 0;
+}
+
+.evidence-collapse .ant-collapse-header {
+  background: var(--md-surface-variant);
+  padding: var(--md-spacing-sm) var(--md-spacing-md) !important;
+  transition: background-color var(--md-transition-fast);
+}
+
+.evidence-collapse .ant-collapse-header:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.evidence-collapse .ant-collapse-content {
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.evidence-collapse .ant-collapse-content-box {
+  padding: var(--md-spacing-md);
+}
+
+.collapse-header {
+  display: flex;
+  align-items: center;
+  font-weight: 500;
+  color: var(--md-on-surface);
+}
+
+.collapse-header .ant-tag {
+  font-weight: 500;
+  border-radius: var(--md-radius-xs);
+  border: none;
+  margin-left: var(--md-spacing-sm);
+}
+
+/* ========================================
+   Empty State
+   ======================================== */
+
+.evidence-card .ant-empty {
+  padding: var(--md-spacing-lg) 0;
+}
+
+.evidence-card .ant-empty-description {
+  color: var(--md-on-surface-variant);
+}
+
+/* ========================================
+   Responsive Adjustments
+   ======================================== */
+
+@media (max-width: 768px) {
+  .evidence-field {
+    flex-direction: column;
+    gap: var(--md-spacing-xs);
+  }
+
+  .evidence-label {
+    min-width: auto;
+    margin-bottom: 2px;
+  }
+
+  .evidence-link {
+    padding: 4px 6px;
+  }
+
+  .evidence-url {
+    /* 移动端默认换行显示 */
+    white-space: normal;
+    word-break: break-all;
+  }
+
+  .extracted-text {
+    max-height: 200px;
+  }
+}
+
+/* ========================================
+   桌面端Tooltip效果（可选）
+   ======================================== */
+
+@media (min-width: 769px) {
+  .evidence-link {
+    position: relative;
+  }
+
+  /* 悬停时URL可以展开 */
+  .evidence-link:hover {
+    background: rgba(25, 118, 210, 0.08);
+  }
+}

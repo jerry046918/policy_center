@@ -1,0 +1,289 @@
+/* ========================================
+   Review Detail - Material Design
+   ======================================== */
+
+.review-detail {
+  background: transparent;
+  min-height: calc(100vh - 64px);
+  padding: 0;
+}
+
+/* ========================================
+   Detail Header - Material Design
+   ======================================== */
+
+.detail-header {
+  display: flex;
+  align-items: center;
+  gap: var(--md-spacing-md);
+  padding: var(--md-spacing-md) var(--md-spacing-lg);
+  background: var(--md-surface);
+  border-radius: var(--md-radius-md);
+  margin-bottom: var(--md-spacing-md);
+  box-shadow: var(--md-elevation-1);
+}
+
+.detail-header .ant-btn {
+  border-radius: var(--md-radius-sm);
+  font-weight: 500;
+  transition: all var(--md-transition-fast);
+}
+
+.detail-header .ant-btn-default:hover {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: var(--md-outline);
+  color: var(--md-on-surface);
+}
+
+.header-tags {
+  display: flex;
+  gap: var(--md-spacing-sm);
+  flex: 1;
+}
+
+.header-tags .ant-tag {
+  font-weight: 500;
+  padding: 2px 12px;
+  border-radius: var(--md-radius-xs);
+  border: none;
+}
+
+.header-actions {
+  margin-left: auto;
+}
+
+.header-actions .ant-space {
+  gap: var(--md-spacing-sm);
+}
+
+.header-actions .ant-btn-primary {
+  box-shadow: var(--md-elevation-1);
+}
+
+.header-actions .ant-btn-primary:hover {
+  box-shadow: var(--md-elevation-2);
+}
+
+.header-actions .ant-btn-dangerous {
+  box-shadow: var(--md-elevation-1);
+}
+
+/* ========================================
+   Info Card - Material Design
+   ======================================== */
+
+.info-card {
+  margin-bottom: 0;
+  border-radius: var(--md-radius-md);
+  box-shadow: var(--md-elevation-1);
+  border: none;
+}
+
+.info-card .ant-card-head-title {
+  font-weight: 500;
+}
+
+/* ========================================
+   Limit Card - Material Design
+   ======================================== */
+
+.limit-card {
+  background: var(--md-surface-variant);
+  border-radius: var(--md-radius-sm);
+  border: none;
+  transition: all var(--md-transition-normal);
+}
+
+.limit-card:hover {
+  background: rgba(25, 118, 210, 0.04);
+  box-shadow: var(--md-elevation-1);
+}
+
+.limit-card .ant-statistic-title {
+  font-size: var(--md-font-size-sm);
+  color: var(--md-on-surface-variant);
+  font-weight: 400;
+}
+
+.limit-card .ant-statistic-content {
+  font-size: 24px;
+  font-weight: 500;
+  color: var(--md-primary);
+}
+
+.limit-card .ant-divider {
+  margin: var(--md-spacing-md) 0;
+  border-color: rgba(0, 0, 0, 0.06);
+}
+
+/* ========================================
+   Retroactive Info - Material Design
+   ======================================== */
+
+.retroactive-info {
+  margin-top: var(--md-spacing-md);
+  padding: var(--md-spacing-md);
+  background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%);
+  border-radius: var(--md-radius-sm);
+  display: flex;
+  align-items: center;
+  gap: var(--md-spacing-sm);
+  border-left: 4px solid var(--md-warning);
+  box-shadow: var(--md-elevation-1);
+}
+
+.retroactive-info .ant-tag {
+  background: var(--md-warning);
+  color: #fff;
+  border: none;
+  font-weight: 500;
+}
+
+/* ========================================
+   Extracted Text - Material Design
+   ======================================== */
+
+.extracted-text {
+  max-height: 400px;
+  overflow-y: auto;
+  padding: var(--md-spacing-md);
+  background: var(--md-surface-variant);
+  border-radius: var(--md-radius-sm);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  word-break: break-word;
+  font-size: var(--md-font-size-sm);
+  line-height: 1.7;
+  font-family: 'Roboto Mono', 'Consolas', 'Monaco', monospace;
+  color: var(--md-on-surface);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+/* Custom scrollbar for extracted text */
+.extracted-text::-webkit-scrollbar {
+  width: 6px;
+}
+
+.extracted-text::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+.extracted-text::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ========================================
+   Sidebar Cards - Material Design
+   ======================================== */
+
+.review-detail .ant-col:last-child .ant-card {
+  margin-bottom: var(--md-spacing-md);
+  border-radius: var(--md-radius-md);
+  box-shadow: var(--md-elevation-1);
+  border: none;
+}
+
+.review-detail .ant-col:last-child .ant-card:last-child {
+  margin-bottom: 0;
+}
+
+.review-detail .ant-card-head-title {
+  font-weight: 500;
+}
+
+/* ========================================
+   Descriptions Styling
+   ======================================== */
+
+.review-detail .ant-descriptions-item-label {
+  font-weight: 500;
+  color: var(--md-on-surface-variant);
+}
+
+.review-detail .ant-descriptions-item-content {
+  color: var(--md-on-surface);
+}
+
+/* ========================================
+   Text Area - Material Design
+   ======================================== */
+
+.review-detail .ant-input {
+  border-radius: var(--md-radius-sm);
+}
+
+.review-detail .ant-input:focus,
+.review-detail .ant-input-focused {
+  border-color: var(--md-primary);
+  box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.12);
+}
+
+/* ========================================
+   Modal - Material Design
+   ======================================== */
+
+.review-detail .ant-modal-content {
+  border-radius: var(--md-radius-lg);
+  overflow: hidden;
+}
+
+.review-detail .ant-modal-header {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  padding: var(--md-spacing-lg);
+}
+
+.review-detail .ant-modal-title {
+  font-weight: 500;
+}
+
+.review-detail .ant-modal-body {
+  padding: var(--md-spacing-lg);
+}
+
+.review-detail .ant-modal-footer {
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  padding: var(--md-spacing-md) var(--md-spacing-lg);
+}
+
+/* ========================================
+   Button Link Styling
+   ======================================== */
+
+.review-detail .ant-btn-link {
+  color: var(--md-primary);
+  font-weight: 500;
+  padding: 0 var(--md-spacing-xs);
+  height: auto;
+}
+
+.review-detail .ant-btn-link:hover {
+  color: var(--md-primary-dark);
+  background: transparent;
+}
+
+/* ========================================
+   Tags Styling
+   ======================================== */
+
+.review-detail .ant-tag {
+  font-weight: 500;
+  border-radius: var(--md-radius-xs);
+  border: none;
+}
+
+/* ========================================
+   Responsive Adjustments
+   ======================================== */
+
+@media (max-width: 992px) {
+  .review-detail .ant-row {
+    flex-direction: column;
+  }
+
+  .review-detail .ant-col {
+    width: 100%;
+    max-width: 100%;
+    margin-bottom: var(--md-spacing-md);
+  }
+}

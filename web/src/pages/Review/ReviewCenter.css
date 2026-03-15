@@ -1,0 +1,165 @@
+/* ========================================
+   Review Center - Material Design
+   ======================================== */
+
+.review-center {
+  background: transparent;
+  padding: 0;
+}
+
+/* ========================================
+   Statistic Cards
+   ======================================== */
+
+.stat-card {
+  text-align: center;
+}
+
+.stat-card .ant-statistic-title {
+  font-size: var(--md-font-size-md);
+  color: var(--md-on-surface-variant);
+  font-weight: 400;
+}
+
+.stat-card .ant-statistic-content {
+  font-size: 24px;
+  font-weight: 500;
+}
+
+/* ========================================
+   Tabs - Material Design
+   ======================================== */
+
+.review-center .ant-tabs-nav {
+  margin-bottom: var(--md-spacing-md);
+}
+
+.review-center .ant-tabs-tab {
+  padding: var(--md-spacing-sm) var(--md-spacing-md);
+  font-weight: 500;
+  color: var(--md-on-surface-variant);
+  transition: all var(--md-transition-fast);
+  border-radius: var(--md-radius-sm);
+  margin: 0 var(--md-spacing-xs);
+}
+
+.review-center .ant-tabs-tab:hover {
+  color: var(--md-primary);
+  background: rgba(25, 118, 210, 0.04);
+}
+
+.review-center .ant-tabs-tab-active {
+  color: var(--md-primary);
+  background: var(--md-primary-container);
+}
+
+.review-center .ant-tabs-ink-bar {
+  display: none;
+}
+
+/* ========================================
+   Table Link Styling
+   ======================================== */
+
+.review-center .ant-table a {
+  color: var(--md-primary);
+  font-weight: 500;
+  transition: color var(--md-transition-fast);
+}
+
+.review-center .ant-table a:hover {
+  color: var(--md-primary-dark);
+  text-decoration: underline;
+}
+
+/* ========================================
+   Status Tags - Material Design
+   ======================================== */
+
+.review-center .ant-tag {
+  font-weight: 500;
+  border-radius: var(--md-radius-xs);
+  border: none;
+}
+
+/* Status color variants */
+.ant-tag-orange {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.ant-tag-blue {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.ant-tag-green {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.ant-tag-red {
+  background: #ffebee;
+  color: #c62828;
+}
+
+/* ========================================
+   Action Buttons
+   ======================================== */
+
+.review-center .ant-btn-text {
+  color: var(--md-on-surface-variant);
+  border-radius: var(--md-radius-full);
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: all var(--md-transition-fast);
+}
+
+.review-center .ant-btn-text:hover {
+  background: rgba(25, 118, 210, 0.08);
+  color: var(--md-primary);
+}
+
+/* ========================================
+   Pagination Styling
+   ======================================== */
+
+.review-center .ant-pagination {
+  padding: var(--md-spacing-md) 0;
+  margin-top: var(--md-spacing-md);
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.review-center .ant-pagination-item {
+  border-radius: var(--md-radius-sm);
+  transition: all var(--md-transition-fast);
+}
+
+.review-center .ant-pagination-item:hover {
+  border-color: var(--md-primary);
+}
+
+.review-center .ant-pagination-item-active {
+  border-color: var(--md-primary);
+  background: var(--md-primary);
+}
+
+.review-center .ant-pagination-item-active a {
+  color: #fff;
+}
+
+/* ========================================
+   Empty State
+   ======================================== */
+
+.review-center .ant-empty {
+  padding: var(--md-spacing-xl) 0;
+}
+
+.review-center .ant-empty-description {
+  color: var(--md-on-surface-variant);
+}

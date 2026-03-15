@@ -1,0 +1,239 @@
+/* ========================================
+   Policy List - Material Design
+   ======================================== */
+
+.policy-list {
+  background: transparent;
+  padding: 0;
+}
+
+/* ========================================
+   Alert Banner
+   ======================================== */
+
+.policy-list .ant-alert {
+  border-radius: var(--md-radius-sm);
+  border: none;
+  box-shadow: var(--md-elevation-1);
+  margin-bottom: var(--md-spacing-md);
+}
+
+.policy-list .ant-alert-info {
+  background: var(--md-primary-container);
+  border-left: 4px solid var(--md-primary);
+}
+
+.policy-list .ant-alert-message {
+  font-weight: 500;
+  color: var(--md-primary-dark);
+}
+
+/* ========================================
+   Filter Card
+   ======================================== */
+
+.filter-card {
+  margin-bottom: var(--md-spacing-md);
+  border-radius: var(--md-radius-md);
+  border: none;
+  box-shadow: var(--md-elevation-1);
+}
+
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--md-spacing-md);
+  align-items: flex-end;
+}
+
+.filter-item {
+  margin-bottom: 0;
+}
+
+/* ========================================
+   Table Card - Material Design
+   ======================================== */
+
+.table-card {
+  border-radius: var(--md-radius-md);
+  border: none;
+  box-shadow: var(--md-elevation-1);
+  overflow: hidden;
+}
+
+.table-card .ant-card-body {
+  padding: 0;
+}
+
+/* Table Cell Alignment */
+.table-card .ant-table-cell {
+  vertical-align: middle;
+}
+
+/* Table Row Hover */
+.table-card .ant-table-tbody > tr:hover > td {
+  background: rgba(25, 118, 210, 0.04);
+}
+
+.table-card .ant-table-tbody > tr:active > td {
+  background: rgba(25, 118, 210, 0.08);
+}
+
+/* ========================================
+   Effective Date Range
+   ======================================== */
+
+.effective-range {
+  font-size: var(--md-font-size-sm);
+  color: var(--md-on-surface-variant);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.effective-range .date-label {
+  font-size: var(--md-font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ========================================
+   Action Column
+   ======================================== */
+
+.action-column {
+  white-space: nowrap;
+}
+
+.action-column .ant-space {
+  flex-wrap: nowrap;
+}
+
+.action-column .ant-btn-text {
+  color: var(--md-on-surface-variant);
+  border-radius: var(--md-radius-full);
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: all var(--md-transition-fast);
+}
+
+.action-column .ant-btn-text:hover {
+  background: rgba(25, 118, 210, 0.08);
+  color: var(--md-primary);
+}
+
+.action-column .ant-btn-text.ant-btn-dangerous:hover {
+  background: rgba(211, 47, 47, 0.08);
+  color: var(--md-error);
+}
+
+/* ========================================
+   Table Link Styling
+   ======================================== */
+
+.policy-list .ant-table a {
+  color: var(--md-primary);
+  font-weight: 500;
+  transition: color var(--md-transition-fast);
+}
+
+.policy-list .ant-table a:hover {
+  color: var(--md-primary-dark);
+  text-decoration: underline;
+}
+
+/* ========================================
+   Search & Filter Row
+   ======================================== */
+
+.policy-list .ant-row {
+  row-gap: var(--md-spacing-md);
+}
+
+.policy-list .ant-select {
+  border-radius: var(--md-radius-sm);
+}
+
+.policy-list .ant-input-search {
+  border-radius: var(--md-radius-sm);
+}
+
+.policy-list .ant-input-search .ant-input {
+  border-radius: var(--md-radius-sm) 0 0 var(--md-radius-sm);
+}
+
+.policy-list .ant-input-search .ant-input-search-button {
+  border-radius: 0 var(--md-radius-sm) var(--md-radius-sm) 0;
+}
+
+/* ========================================
+   Button Group
+   ======================================== */
+
+.policy-list .ant-space-item .ant-btn {
+  border-radius: var(--md-radius-sm);
+  font-weight: 500;
+  transition: all var(--md-transition-fast);
+}
+
+.policy-list .ant-btn-primary:hover {
+  box-shadow: var(--md-elevation-2);
+}
+
+.policy-list .ant-btn-default:hover {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: var(--md-outline);
+}
+
+/* ========================================
+   Pagination Styling
+   ======================================== */
+
+.policy-list .ant-pagination {
+  padding: var(--md-spacing-md) var(--md-spacing-lg);
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  margin: 0;
+}
+
+.policy-list .ant-pagination-item {
+  border-radius: var(--md-radius-sm);
+  transition: all var(--md-transition-fast);
+}
+
+.policy-list .ant-pagination-item:hover {
+  border-color: var(--md-primary);
+}
+
+.policy-list .ant-pagination-item-active {
+  border-color: var(--md-primary);
+  background: var(--md-primary);
+}
+
+.policy-list .ant-pagination-item-active a {
+  color: #fff;
+}
+
+/* ========================================
+   Responsive Adjustments
+   ======================================== */
+
+@media (max-width: 1200px) {
+  .policy-list .ant-col {
+    flex: 0 0 auto;
+  }
+}
+
+@media (max-width: 768px) {
+  .policy-list .ant-row {
+    flex-direction: column;
+  }
+
+  .policy-list .ant-col {
+    width: 100%;
+    max-width: 100%;
+  }
+}
