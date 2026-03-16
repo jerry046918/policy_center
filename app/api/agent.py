@@ -172,10 +172,6 @@ async def submit_policy(
     - new: 新增政策（默认）
     - update: 更新已有政策，需提供 existing_policy_id 和 change_description
     """
-    # 检查权限
-    if "submit" not in agent.permissions:
-        raise HTTPException(status_code=403, detail="No permission to submit policies")
-
     # 验证提交类型
     if request.submit_type not in ["new", "update"]:
         raise HTTPException(status_code=400, detail="submit_type 必须是 'new' 或 'update'")

@@ -1,7 +1,7 @@
 """审核中心 API"""
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, and_, or_
+from sqlalchemy import select, func, and_, or_, case
 from typing import Optional
 from datetime import datetime
 from pydantic import BaseModel
@@ -19,8 +19,10 @@ from app.schemas.review import (
 from app.schemas.common import PaginatedResponse
 from app.api.auth import get_current_user, UserAuth
 from app.services.review_service import ReviewService
+import logging
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 class ApproveRequest(BaseModel):
@@ -93,15 +95,16 @@ async def list_reviews(
     total = await session.scalar(count_query)
 
     # 排序：优先级 > SLA > 提交时间
-    priority_order = {
-        "urgent": 0,
-        "high": 1,
-        "normal": 2,
-        "low": 3
-    }
+    priority_order = case(
+        (ReviewQueue.priority == "urgent", 0),
+        (ReviewQueue.priority == "high", 1),
+        (ReviewQueue.priority == "normal", 2),
+        (ReviewQueue.priority == "low", 3),
+        else_=4
+    )
 
     query = query.order_by(
-        ReviewQueue.priority.desc(),
+        priority_order.asc(),
         ReviewQueue.sla_deadline.asc().nulls_last(),
         ReviewQueue.submitted_at.asc()
     )
@@ -165,6 +168,71 @@ async def list_reviews(
         page_size=page_size,
         total_pages=(total + page_size - 1) // page_size if total > 0 else 0
     )
+
+
+@router.get("/stats/summary")
+async def get_review_stats(
+    session: AsyncSession = Depends(get_session),
+    current_user: UserAuth = Depends(get_current_user)
+):
+    """获取审核统计"""
+    service = ReviewService(session)
+    stats = await service.get_review_stats()
+
+    return {
+        "success": True,
+        "data": stats
+    }
+
+
+@router.get("/my/tasks")
+async def get_my_review_tasks(
+    status: Optional[str] = Query(None),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    session: AsyncSession = Depends(get_session),
+    current_user: UserAuth = Depends(get_current_user)
+):
+    """获取当前用户的审核任务"""
+    query = select(ReviewQueue).where(
+        or_(
+            ReviewQueue.claimed_by == current_user.user_id,
+            ReviewQueue.reviewer_id == current_user.user_id
+        )
+    )
+
+    if status:
+        query = query.where(ReviewQueue.status == status)
+
+    # 统计
+    count_query = select(func.count()).select_from(query.subquery())
+    total = await session.scalar(count_query)
+
+    # 分页
+    query = query.order_by(ReviewQueue.reviewed_at.desc().nulls_last())
+    query = query.offset((page - 1) * page_size).limit(page_size)
+
+    result = await session.execute(query)
+    reviews = result.scalars().all()
+
+    items = []
+    for r in reviews:
+        submitted_data = json.loads(r.submitted_data) if r.submitted_data else {}
+        items.append({
+            "review_id": r.review_id,
+            "policy_title": submitted_data.get("title", ""),
+            "status": r.status,
+            "submitted_at": r.submitted_at,
+            "reviewed_at": r.reviewed_at
+        })
+
+    return {
+        "success": True,
+        "data": items,
+        "total": total,
+        "page": page,
+        "page_size": page_size
+    }
 
 
 @router.get("/{review_id}", response_model=ReviewDetailResponse)
@@ -281,8 +349,7 @@ async def approve_review(
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         # 捕获数据库约束错误等其他异常
-        import logging
-        logging.error(f"Approve review failed: {e}")
+        logger.error(f"Approve review failed: {e}")
         error_msg = str(e)
         if "UNIQUE constraint" in error_msg:
             raise HTTPException(status_code=400, detail=f"数据约束冲突：{error_msg}")
@@ -340,8 +407,7 @@ async def approve_review_with_override(
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         # 捕获数据库约束错误等其他异常
-        import logging
-        logging.error(f"Approve review with override failed: {e}")
+        logger.error(f"Approve review with override failed: {e}")
         error_msg = str(e)
         if "UNIQUE constraint" in error_msg:
             raise HTTPException(status_code=400, detail=f"数据约束冲突：{error_msg}")
@@ -420,68 +486,3 @@ async def resubmit_review(
         raise HTTPException(status_code=400, detail=str(e))
 
     return {"success": True, "message": "已重新提交"}
-
-
-@router.get("/stats/summary")
-async def get_review_stats(
-    session: AsyncSession = Depends(get_session),
-    current_user: UserAuth = Depends(get_current_user)
-):
-    """获取审核统计"""
-    service = ReviewService(session)
-    stats = await service.get_review_stats()
-
-    return {
-        "success": True,
-        "data": stats
-    }
-
-
-@router.get("/my/tasks")
-async def get_my_review_tasks(
-    status: Optional[str] = Query(None),
-    page: int = Query(1, ge=1),
-    page_size: int = Query(20, ge=1, le=100),
-    session: AsyncSession = Depends(get_session),
-    current_user: UserAuth = Depends(get_current_user)
-):
-    """获取当前用户的审核任务"""
-    query = select(ReviewQueue).where(
-        or_(
-            ReviewQueue.claimed_by == current_user.user_id,
-            ReviewQueue.reviewer_id == current_user.user_id
-        )
-    )
-
-    if status:
-        query = query.where(ReviewQueue.status == status)
-
-    # 统计
-    count_query = select(func.count()).select_from(query.subquery())
-    total = await session.scalar(count_query)
-
-    # 分页
-    query = query.order_by(ReviewQueue.reviewed_at.desc().nulls_last())
-    query = query.offset((page - 1) * page_size).limit(page_size)
-
-    result = await session.execute(query)
-    reviews = result.scalars().all()
-
-    items = []
-    for r in reviews:
-        submitted_data = json.loads(r.submitted_data) if r.submitted_data else {}
-        items.append({
-            "review_id": r.review_id,
-            "policy_title": submitted_data.get("title", ""),
-            "status": r.status,
-            "submitted_at": r.submitted_at,
-            "reviewed_at": r.reviewed_at
-        })
-
-    return {
-        "success": True,
-        "data": items,
-        "total": total,
-        "page": page,
-        "page_size": page_size
-    }

@@ -46,9 +46,8 @@ class TokenResponse(BaseModel):
 
 class AgentAuth:
     """Agent 认证上下文"""
-    def __init__(self, agent_id: str, permissions: list):
+    def __init__(self, agent_id: str):
         self.agent_id = agent_id
-        self.permissions = permissions
 
 
 class UserAuth:
@@ -144,11 +143,7 @@ async def get_current_agent(
     agent.last_used_at = datetime.utcnow().isoformat()
     await session.commit()
 
-    import json
-    return AgentAuth(
-        agent_id=agent.agent_id,
-        permissions=json.loads(agent.permissions)
-    )
+    return AgentAuth(agent_id=agent.agent_id)
 
 
 @router.post("/login", response_model=TokenResponse)

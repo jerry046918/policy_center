@@ -44,7 +44,7 @@ const menuItems = [
     label: '系统管理',
     children: [
       { key: '/admin/users', label: '用户管理', icon: <TeamOutlined /> },
-      { key: '/admin/agents', label: 'Agent 管理', icon: <ApiOutlined /> },
+      { key: '/admin/agents', label: 'API Key 管理', icon: <ApiOutlined /> },
       { key: '/admin/regions', label: '地区管理', icon: <GlobalOutlined /> },
     ],
   },

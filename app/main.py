@@ -8,6 +8,8 @@ import uuid
 import logging
 import os
 
+from sqlalchemy import text
+
 from app.config import settings
 from app.database import init_db, engine
 # Agent REST API (replaces MCP)
@@ -126,7 +128,7 @@ async def ready():
     """就绪检查"""
     try:
         async with engine.connect() as conn:
-            await conn.execute("SELECT 1")
+            await conn.execute(text("SELECT 1"))
         return {"status": "ready", "database": "connected"}
     except Exception as e:
         return JSONResponse(

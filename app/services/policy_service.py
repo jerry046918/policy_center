@@ -399,6 +399,40 @@ class PolicyService:
             "similarity_score": 0.0
         }
 
+    async def expire_outdated(self) -> int:
+        """
+        将已过期的政策标记为 expired 状态
+
+        检查 effective_end < 当前日期 且状态为 active 的政策
+
+        Returns:
+            过期的政策数量
+        """
+        now = datetime.utcnow().strftime("%Y-%m-%d")
+        result = await self.session.execute(
+            select(Policy).where(
+                and_(
+                    Policy.status == "active",
+                    Policy.deleted_at.is_(None),
+                    Policy.effective_end.isnot(None),
+                    Policy.effective_end < now
+                )
+            )
+        )
+        policies = result.scalars().all()
+
+        count = 0
+        for policy in policies:
+            policy.status = "expired"
+            policy.updated_at = datetime.utcnow().isoformat()
+            count += 1
+
+        if count > 0:
+            await self.session.commit()
+            logger.info(f"Expired {count} outdated policies")
+
+        return count
+
     async def _create_audit_log(
         self,
         policy_id: str,

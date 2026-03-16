@@ -13,7 +13,7 @@ def get_cached(key: str) -> Optional[Any]:
     if value:
         try:
             return json.loads(value)
-        except:
+        except (ValueError, TypeError):
             return value
     return None
 

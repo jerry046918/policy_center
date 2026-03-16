@@ -128,6 +128,28 @@ async def list_policies(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/check-duplicate")
+async def check_duplicate(
+    region_code: Optional[str] = Query(None),
+    effective_start: Optional[str] = Query(None),
+    exclude_policy_id: Optional[str] = Query(None),
+    session: AsyncSession = Depends(get_session),
+    current_user: UserAuth = Depends(get_current_user)
+):
+    """检查政策是否重复"""
+    try:
+        service = PolicyService(session)
+        result = await service.check_duplicate(
+            region_code=region_code,
+            effective_start=effective_start,
+            exclude_policy_id=exclude_policy_id
+        )
+        return {"success": True, **result}
+    except Exception as e:
+        logger.error(f"Error checking duplicate: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/{policy_id}", response_model=PolicyResponse)
 async def get_policy(
     policy_id: str,
@@ -437,26 +459,4 @@ async def revoke_policy(
         raise
     except Exception as e:
         logger.error(f"Error revoking policy {policy_id}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.get("/check-duplicate")
-async def check_duplicate(
-    region_code: Optional[str] = Query(None),
-    effective_start: Optional[str] = Query(None),
-    exclude_policy_id: Optional[str] = Query(None),
-    session: AsyncSession = Depends(get_session),
-    current_user: UserAuth = Depends(get_current_user)
-):
-    """检查政策是否重复"""
-    try:
-        service = PolicyService(session)
-        result = await service.check_duplicate(
-            region_code=region_code,
-            effective_start=effective_start,
-            exclude_policy_id=exclude_policy_id
-        )
-        return {"success": True, **result}
-    except Exception as e:
-        logger.error(f"Error checking duplicate: {e}")
         raise HTTPException(status_code=500, detail=str(e))

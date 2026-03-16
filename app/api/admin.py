@@ -23,8 +23,6 @@ logger = logging.getLogger(__name__)
 class AgentCreate(BaseModel):
     agent_name: str
     description: Optional[str] = None
-    permissions: list = ["submit"]
-    rate_limit: int = 60
 
 
 class AgentResponse(BaseModel):
@@ -33,8 +31,6 @@ class AgentResponse(BaseModel):
     api_key: Optional[str] = None  # 仅创建时返回
     api_key_prefix: str
     description: Optional[str]
-    permissions: list
-    rate_limit: int
     is_active: bool
     last_used_at: Optional[str]
     created_at: str
@@ -287,8 +283,6 @@ async def list_agents(
                 "agent_name": a.agent_name,
                 "api_key_prefix": a.api_key_prefix,
                 "description": a.description,
-                "permissions": json.loads(a.permissions) if a.permissions else [],
-                "rate_limit": a.rate_limit,
                 "is_active": a.is_active == 1,
                 "last_used_at": a.last_used_at,
                 "created_at": a.created_at
@@ -321,8 +315,6 @@ async def create_agent(
         api_key_hash=api_key_hash,
         api_key_prefix=api_key_prefix,
         description=data.description,
-        permissions=json.dumps(data.permissions),
-        rate_limit=data.rate_limit,
         created_by=current_user.user_id
     )
 
@@ -336,8 +328,6 @@ async def create_agent(
         api_key=api_key,  # 仅此一次返回明文
         api_key_prefix=agent.api_key_prefix,
         description=agent.description,
-        permissions=json.loads(agent.permissions),
-        rate_limit=agent.rate_limit,
         is_active=True,
         last_used_at=None,
         created_at=agent.created_at
@@ -345,12 +335,12 @@ async def create_agent(
 
 
 @router.delete("/agents/{agent_id}")
-async def revoke_agent(
+async def delete_agent(
     agent_id: str,
     session: AsyncSession = Depends(get_session),
     current_user: UserAuth = Depends(get_current_user)
 ):
-    """撤销 Agent 凭据"""
+    """删除 API Key"""
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Admin required")
 
@@ -360,12 +350,40 @@ async def revoke_agent(
     agent = result.scalar_one_or_none()
 
     if not agent:
-        raise HTTPException(status_code=404, detail="Agent not found")
+        raise HTTPException(status_code=404, detail="API Key not found")
 
-    agent.is_active = 0
+    await session.delete(agent)
     await session.commit()
 
-    return {"success": True, "message": "Agent revoked"}
+    return {"success": True, "message": "API Key deleted"}
+
+
+@router.patch("/agents/{agent_id}/status")
+async def toggle_agent_status(
+    agent_id: str,
+    data: ToggleStatusRequest,
+    session: AsyncSession = Depends(get_session),
+    current_user: UserAuth = Depends(get_current_user)
+):
+    """启用/禁用 API Key"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin required")
+
+    result = await session.execute(
+        select(AgentCredential).where(AgentCredential.agent_id == agent_id)
+    )
+    agent = result.scalar_one_or_none()
+
+    if not agent:
+        raise HTTPException(status_code=404, detail="API Key not found")
+
+    agent.is_active = 1 if data.is_active else 0
+    await session.commit()
+
+    return {
+        "success": True,
+        "message": f"API Key {'activated' if data.is_active else 'deactivated'}"
+    }
 
 
 # ==================== 地区管理 ====================

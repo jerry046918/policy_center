@@ -8,215 +8,176 @@ import {
   Modal,
   Form,
   Input,
-  Select,
   message,
   Tooltip,
-  Descriptions,
-  Divider,
+  Typography,
 } from 'antd'
 import {
   PlusOutlined,
   KeyOutlined,
   StopOutlined,
   CheckCircleOutlined,
-  InfoCircleOutlined,
+  DeleteOutlined,
+  CopyOutlined,
 } from '@ant-design/icons'
-import './Admin.css'
 import type { ColumnsType } from 'antd/es/table'
-import dayjs from 'dayjs'
+import {
+  listApiKeys,
+  createApiKey,
+  toggleApiKeyStatus,
+  deleteApiKey,
+} from '../../services/apiKeyService'
+import type { ApiKeyItem } from '../../services/apiKeyService'
+import './Admin.css'
 
-interface Agent {
-  agent_id: string
-  name: string
-  role: string
-  status: string
-  api_key: string
-  permissions: string[]
-  created_at: string
-  last_active_at?: string
-  request_count: number
-}
+const { Paragraph } = Typography
 
-const { Option } = Select
-
-export default function AgentsPage() {
+export default function ApiKeysPage() {
   const [loading, setLoading] = useState(false)
-  const [agents, setAgents] = useState<Agent[]>([])
+  const [apiKeys, setApiKeys] = useState<ApiKeyItem[]>([])
+  const [total, setTotal] = useState(0)
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(20)
   const [modalVisible, setModalVisible] = useState(false)
-  const [detailVisible, setDetailVisible] = useState(false)
-  const [currentAgent, setCurrentAgent] = useState<Agent | null>(null)
+  const [creating, setCreating] = useState(false)
+  const [newKeyModalVisible, setNewKeyModalVisible] = useState(false)
+  const [newApiKey, setNewApiKey] = useState('')
   const [form] = Form.useForm()
 
   useEffect(() => {
-    loadAgents()
-  }, [])
+    loadApiKeys()
+  }, [page, pageSize])
 
-  const loadAgents = async () => {
+  const loadApiKeys = async () => {
     setLoading(true)
     try {
-      // Mock data for now
-      setAgents([
-        {
-          agent_id: 'agt_001',
-          name: '政策爬虫Agent',
-          role: 'collector',
-          status: 'active',
-          api_key: 'sk-****1234',
-          permissions: ['policy:read', 'policy:create'],
-          created_at: '2024-01-15 10:30:00',
-          last_active_at: '2024-03-13 08:15:00',
-          request_count: 1256,
-        },
-        {
-          agent_id: 'agt_002',
-          name: 'OCR识别Agent',
-          role: 'collector',
-          status: 'active',
-          api_key: 'sk-****5678',
-          permissions: ['policy:read', 'policy:create'],
-          created_at: '2024-01-15 10:35:00',
-          last_active_at: '2024-03-12 16:45:00',
-          request_count: 892,
-        },
-        {
-          agent_id: 'agt_003',
-          name: '外部集成Agent',
-          role: 'api_consumer',
-          status: 'inactive',
-          api_key: 'sk-****9012',
-          permissions: ['policy:read'],
-          created_at: '2024-02-01 09:00:00',
-          last_active_at: '2024-02-28 14:30:00',
-          request_count: 156,
-        },
-      ])
+      const res = await listApiKeys({ page, page_size: pageSize })
+      setApiKeys(res.data || [])
+      setTotal(res.total || 0)
     } catch (error) {
-      message.error('加载Agent列表失败')
+      console.error('加载 API Key 列表失败:', error)
     } finally {
       setLoading(false)
     }
   }
 
-  const handleCreate = async (values: any) => {
+  const handleCreate = async (values: { agent_name: string; description?: string }) => {
+    setCreating(true)
     try {
-      // API call would go here
-      message.success('Agent创建成功')
+      const result = await createApiKey(values)
+      setNewApiKey(result.api_key)
       setModalVisible(false)
+      setNewKeyModalVisible(true)
       form.resetFields()
-      loadAgents()
+      loadApiKeys()
     } catch (error) {
       message.error('创建失败')
+    } finally {
+      setCreating(false)
     }
   }
 
-  const handleToggleStatus = async (agent: Agent) => {
+  const handleToggleStatus = async (record: ApiKeyItem) => {
+    const newActive = !record.is_active
     try {
-      // API call would go here
-      message.success(agent.status === 'active' ? '已停用' : '已启用')
-      loadAgents()
+      await toggleApiKeyStatus(record.agent_id, newActive)
+      message.success(newActive ? '已启用' : '已停用')
+      loadApiKeys()
     } catch (error) {
       message.error('操作失败')
     }
   }
 
-  const handleRegenerateKey = async (agent: Agent) => {
+  const handleDelete = (record: ApiKeyItem) => {
     Modal.confirm({
-      title: '确认重新生成API Key？',
-      content: '重新生成后，原API Key将立即失效。',
+      title: '确认删除',
+      content: `确定要删除 API Key「${record.agent_name}」吗？删除后将无法恢复。`,
+      okText: '删除',
+      okType: 'danger',
       onOk: async () => {
         try {
-          // API call would go here
-          message.success('API Key已重新生成')
-          loadAgents()
+          await deleteApiKey(record.agent_id)
+          message.success('已删除')
+          loadApiKeys()
         } catch (error) {
-          message.error('操作失败')
+          message.error('删除失败')
         }
       },
     })
   }
 
-  const getRoleLabel = (role: string) => {
-    const roleMap: Record<string, string> = {
-      collector: '采集器',
-      reviewer: '审核器',
-      api_consumer: 'API消费者',
-    }
-    return roleMap[role] || role
+  const handleCopyKey = (key: string) => {
+    navigator.clipboard.writeText(key).then(() => {
+      message.success('已复制到剪贴板')
+    }).catch(() => {
+      message.error('复制失败，请手动复制')
+    })
   }
 
-  const columns: ColumnsType<Agent> = [
+  const columns: ColumnsType<ApiKeyItem> = [
     {
       title: '名称',
-      dataIndex: 'name',
-      key: 'name',
-      render: (text, record) => (
-        <a onClick={() => {
-          setCurrentAgent(record)
-          setDetailVisible(true)
-        }}>
-          {text}
-        </a>
-      ),
+      dataIndex: 'agent_name',
+      key: 'agent_name',
     },
     {
-      title: '角色',
-      dataIndex: 'role',
-      key: 'role',
-      render: (role) => <Tag>{getRoleLabel(role)}</Tag>,
+      title: '描述',
+      dataIndex: 'description',
+      key: 'description',
+      render: (text) => text || '-',
+    },
+    {
+      title: 'Key 前缀',
+      dataIndex: 'api_key_prefix',
+      key: 'api_key_prefix',
+      render: (prefix) => (
+        <Tag icon={<KeyOutlined />} color="blue">
+          {prefix}****
+        </Tag>
+      ),
     },
     {
       title: '状态',
-      dataIndex: 'status',
-      key: 'status',
-      render: (status) => (
-        <Tag color={status === 'active' ? 'green' : 'default'}>
-          {status === 'active' ? '活跃' : '停用'}
+      dataIndex: 'is_active',
+      key: 'is_active',
+      render: (active) => (
+        <Tag color={active ? 'green' : 'default'}>
+          {active ? '启用' : '停用'}
         </Tag>
       ),
     },
     {
-      title: 'API Key',
-      dataIndex: 'api_key',
-      key: 'api_key',
-      render: (key) => (
-        <Tag icon={<KeyOutlined />} color="blue">
-          {key}
-        </Tag>
-      ),
+      title: '最后使用',
+      dataIndex: 'last_used_at',
+      key: 'last_used_at',
+      render: (time) => time || '从未使用',
     },
     {
-      title: '请求数',
-      dataIndex: 'request_count',
-      key: 'request_count',
-      sorter: (a, b) => a.request_count - b.request_count,
-      render: (count) => count.toLocaleString(),
-    },
-    {
-      title: '最后活跃',
-      dataIndex: 'last_active_at',
-      key: 'last_active_at',
-      render: (time) => time || '-',
+      title: '创建时间',
+      dataIndex: 'created_at',
+      key: 'created_at',
     },
     {
       title: '操作',
       key: 'action',
-      width: 200,
+      width: 160,
       render: (_, record) => (
         <Space size="small">
-          <Tooltip title="重新生成Key">
+          <Tooltip title={record.is_active ? '停用' : '启用'}>
             <Button
               type="text"
               size="small"
-              icon={<KeyOutlined />}
-              onClick={() => handleRegenerateKey(record)}
+              icon={record.is_active ? <StopOutlined /> : <CheckCircleOutlined />}
+              onClick={() => handleToggleStatus(record)}
             />
           </Tooltip>
-          <Tooltip title={record.status === 'active' ? '停用' : '启用'}>
+          <Tooltip title="删除">
             <Button
               type="text"
               size="small"
-              icon={record.status === 'active' ? <StopOutlined /> : <CheckCircleOutlined />}
-              onClick={() => handleToggleStatus(record)}
+              danger
+              icon={<DeleteOutlined />}
+              onClick={() => handleDelete(record)}
             />
           </Tooltip>
         </Space>
@@ -227,122 +188,91 @@ export default function AgentsPage() {
   return (
     <div className="admin-page">
       <Card
-        title="Agent管理"
+        title="API Key 管理"
         extra={
           <Button
             type="primary"
             icon={<PlusOutlined />}
             onClick={() => setModalVisible(true)}
           >
-            新建Agent
+            创建 API Key
           </Button>
         }
       >
+        <Paragraph type="secondary" style={{ marginBottom: 16 }}>
+          API Key 用于外部系统接入，持有 Key 即可查询政策、获取 Schema 及提交审核。
+        </Paragraph>
         <Table
           columns={columns}
-          dataSource={agents}
+          dataSource={apiKeys}
           rowKey="agent_id"
           loading={loading}
           pagination={{
+            current: page,
+            pageSize,
+            total,
             showSizeChanger: true,
             showQuickJumper: true,
-            showTotal: (total) => `共 ${total} 个Agent`,
+            showTotal: (t) => `共 ${t} 个 API Key`,
+            onChange: (p, ps) => {
+              setPage(p)
+              setPageSize(ps)
+            },
           }}
         />
       </Card>
 
-      {/* 新建Agent弹窗 */}
+      {/* 创建 API Key 弹窗 */}
       <Modal
-        title="新建Agent"
+        title="创建 API Key"
         open={modalVisible}
-        onCancel={() => setModalVisible(false)}
+        onCancel={() => {
+          setModalVisible(false)
+          form.resetFields()
+        }}
         onOk={() => form.submit()}
+        confirmLoading={creating}
       >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleCreate}
-          initialValues={{ role: 'collector', permissions: ['policy:read'] }}
-        >
+        <Form form={form} layout="vertical" onFinish={handleCreate}>
           <Form.Item
-            name="name"
+            name="agent_name"
             label="名称"
-            rules={[{ required: true, message: '请输入Agent名称' }]}
+            rules={[{ required: true, message: '请输入名称' }]}
           >
-            <Input placeholder="如：政策爬虫Agent" />
+            <Input placeholder="如：政策爬虫、外部对接系统" />
           </Form.Item>
-
-          <Form.Item
-            name="role"
-            label="角色"
-            rules={[{ required: true }]}
-          >
-            <Select>
-              <Option value="collector">采集器</Option>
-              <Option value="reviewer">审核器</Option>
-              <Option value="api_consumer">API消费者</Option>
-            </Select>
-          </Form.Item>
-
-          <Form.Item
-            name="permissions"
-            label="权限"
-            rules={[{ required: true }]}
-          >
-            <Select mode="multiple" placeholder="选择权限">
-              <Option value="policy:read">政策读取</Option>
-              <Option value="policy:create">政策创建</Option>
-              <Option value="policy:update">政策更新</Option>
-              <Option value="review:read">审核读取</Option>
-              <Option value="review:approve">审核通过</Option>
-            </Select>
+          <Form.Item name="description" label="描述">
+            <Input.TextArea rows={2} placeholder="用途说明（可选）" />
           </Form.Item>
         </Form>
       </Modal>
 
-      {/* Agent详情弹窗 */}
+      {/* 显示新创建的 API Key */}
       <Modal
-        title="Agent详情"
-        open={detailVisible}
-        onCancel={() => setDetailVisible(false)}
-        footer={null}
-        width={600}
+        title="API Key 创建成功"
+        open={newKeyModalVisible}
+        onCancel={() => {
+          setNewKeyModalVisible(false)
+          setNewApiKey('')
+        }}
+        footer={[
+          <Button key="copy" type="primary" icon={<CopyOutlined />} onClick={() => handleCopyKey(newApiKey)}>
+            复制 Key
+          </Button>,
+          <Button key="close" onClick={() => { setNewKeyModalVisible(false); setNewApiKey('') }}>
+            关闭
+          </Button>,
+        ]}
       >
-        {currentAgent && (
-          <>
-            <Descriptions column={2} bordered size="small">
-              <Descriptions.Item label="名称" span={2}>
-                {currentAgent.name}
-              </Descriptions.Item>
-              <Descriptions.Item label="Agent ID">{currentAgent.agent_id}</Descriptions.Item>
-              <Descriptions.Item label="角色">{getRoleLabel(currentAgent.role)}</Descriptions.Item>
-              <Descriptions.Item label="状态">
-                <Tag color={currentAgent.status === 'active' ? 'green' : 'default'}>
-                  {currentAgent.status === 'active' ? '活跃' : '停用'}
-                </Tag>
-              </Descriptions.Item>
-              <Descriptions.Item label="请求数">
-                {currentAgent.request_count.toLocaleString()}
-              </Descriptions.Item>
-              <Descriptions.Item label="创建时间" span={2}>
-                {currentAgent.created_at}
-              </Descriptions.Item>
-              <Descriptions.Item label="最后活跃" span={2}>
-                {currentAgent.last_active_at || '-'}
-              </Descriptions.Item>
-            </Descriptions>
-
-            <Divider>权限列表</Divider>
-
-            <Space wrap>
-              {currentAgent.permissions.map((perm) => (
-                <Tag key={perm} color="blue">
-                  {perm}
-                </Tag>
-              ))}
-            </Space>
-          </>
-        )}
+        <p style={{ marginBottom: 8, color: '#ff4d4f', fontWeight: 500 }}>
+          请立即保存此 API Key，关闭后将无法再次查看完整内容。
+        </p>
+        <Input.TextArea
+          value={newApiKey}
+          readOnly
+          rows={2}
+          style={{ fontFamily: 'monospace', fontSize: 13 }}
+        />
       </Modal>
     </div>
   )

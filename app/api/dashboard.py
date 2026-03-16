@@ -5,6 +5,7 @@ from sqlalchemy import select, func, and_, distinct
 from typing import Dict, Any, List
 from datetime import datetime, timedelta
 from pydantic import BaseModel
+import json
 
 from app.database import get_session
 from app.models.policy import Policy, PolicySocialInsurance
@@ -105,7 +106,7 @@ async def get_dashboard(
 
     # 总地区数
     total_regions = await session.scalar(
-        select(func.count()).select_from(Region).where(Region.level == 2)
+        select(func.count()).select_from(Region).where(Region.level == "city")
     )
 
     # SLA 统计
@@ -183,7 +184,6 @@ async def get_dashboard(
 
     pending_list = []
     for r in pending_reviews:
-        import json
         submitted_data = json.loads(r.submitted_data) if r.submitted_data else {}
 
         # 获取地区名称
