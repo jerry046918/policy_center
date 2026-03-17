@@ -31,7 +31,7 @@ export default function Login() {
       <div className="login-background">
         <div className="login-box">
           <h1 className="login-title">政策中心</h1>
-          <p className="login-subtitle">社保公积金基数政策管理平台</p>
+          <p className="login-subtitle">政策数据管理平台</p>
           <Card className="login-card">
             <Form
               name="login"

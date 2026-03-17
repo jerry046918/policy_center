@@ -1,14 +1,14 @@
 """数据看板 API"""
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, and_, distinct
-from typing import Dict, Any, List
+from sqlalchemy import select, func, and_, distinct, or_
+from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
 from pydantic import BaseModel
 import json
 
 from app.database import get_session
-from app.models.policy import Policy, PolicySocialInsurance
+from app.models.policy import Policy, PolicySocialInsurance, PolicyHousingFund
 from app.models.review import ReviewQueue
 from app.models.region import Region
 from app.api.auth import get_current_user, UserAuth
@@ -30,19 +30,23 @@ class DashboardStats(BaseModel):
 class RecentPolicy(BaseModel):
     """最近政策"""
     policy_id: str
+    policy_type: str = "social_insurance"
     title: str
     region_name: str
     region_code: str
     effective_start: str
     status: str
-    si_upper_limit: int
-    si_lower_limit: int
+    si_upper_limit: Optional[int] = None
+    si_lower_limit: Optional[int] = None
+    hf_upper_limit: Optional[int] = None
+    hf_lower_limit: Optional[int] = None
 
 
 class PendingReview(BaseModel):
     """待审核项"""
     review_id: str
     policy_title: str
+    policy_type: Optional[str] = None
     region_name: str
     risk_level: str
     priority: str
@@ -59,8 +63,10 @@ class RetroactivePolicy(BaseModel):
     effective_start: str
     retroactive_start: str
     retroactive_months: int
-    si_upper_limit: int
-    si_lower_limit: int
+    si_upper_limit: Optional[int] = None
+    si_lower_limit: Optional[int] = None
+    hf_upper_limit: Optional[int] = None
+    hf_lower_limit: Optional[int] = None
 
 
 class DashboardResponse(BaseModel):
@@ -141,10 +147,11 @@ async def get_dashboard(
         sla_warning=sla_warning
     )
 
-    # 2. 最近发布的政策（最近10条）
+    # 2. 最近发布的政策（最近10条，支持所有类型）
     recent_result = await session.execute(
-        select(Policy, PolicySocialInsurance)
-        .join(PolicySocialInsurance, Policy.policy_id == PolicySocialInsurance.policy_id)
+        select(Policy, PolicySocialInsurance, PolicyHousingFund)
+        .outerjoin(PolicySocialInsurance, Policy.policy_id == PolicySocialInsurance.policy_id)
+        .outerjoin(PolicyHousingFund, Policy.policy_id == PolicyHousingFund.policy_id)
         .where(Policy.status == "active")
         .order_by(Policy.created_at.desc())
         .limit(10)
@@ -152,7 +159,7 @@ async def get_dashboard(
     recent_rows = recent_result.fetchall()
 
     recent_policies = []
-    for policy, si in recent_rows:
+    for policy, si, hf in recent_rows:
         # 获取地区名称
         region_name = await session.scalar(
             select(Region.name).where(Region.code == policy.region_code)
@@ -160,13 +167,16 @@ async def get_dashboard(
 
         recent_policies.append(RecentPolicy(
             policy_id=policy.policy_id,
+            policy_type=policy.policy_type,
             title=policy.title,
             region_name=region_name or policy.region_code,
             region_code=policy.region_code,
             effective_start=policy.effective_start,
             status=policy.status,
-            si_upper_limit=si.si_upper_limit,
-            si_lower_limit=si.si_lower_limit
+            si_upper_limit=si.si_upper_limit if si else None,
+            si_lower_limit=si.si_lower_limit if si else None,
+            hf_upper_limit=hf.hf_upper_limit if hf else None,
+            hf_lower_limit=hf.hf_lower_limit if hf else None,
         ))
 
     # 3. 待审核队列（优先级排序，最多10条）
@@ -209,6 +219,7 @@ async def get_dashboard(
         pending_list.append(PendingReview(
             review_id=r.review_id,
             policy_title=submitted_data.get("title", ""),
+            policy_type=submitted_data.get("policy_type"),
             region_name=region_name or region_code or "",
             risk_level=r.risk_level,
             priority=r.priority,
@@ -219,11 +230,15 @@ async def get_dashboard(
 
     # 4. 追溯政策预警（有追溯生效的政策）
     retro_result = await session.execute(
-        select(Policy, PolicySocialInsurance)
-        .join(PolicySocialInsurance, Policy.policy_id == PolicySocialInsurance.policy_id)
+        select(Policy, PolicySocialInsurance, PolicyHousingFund)
+        .outerjoin(PolicySocialInsurance, Policy.policy_id == PolicySocialInsurance.policy_id)
+        .outerjoin(PolicyHousingFund, Policy.policy_id == PolicyHousingFund.policy_id)
         .where(
             Policy.status == "active",
-            PolicySocialInsurance.is_retroactive == 1
+            or_(
+                PolicySocialInsurance.is_retroactive == 1,
+                PolicyHousingFund.is_retroactive == 1,
+            )
         )
         .order_by(Policy.effective_start.desc())
         .limit(10)
@@ -231,20 +246,32 @@ async def get_dashboard(
     retro_rows = retro_result.fetchall()
 
     retroactive_policies = []
-    for policy, si in retro_rows:
+    for policy, si, hf in retro_rows:
         region_name = await session.scalar(
             select(Region.name).where(Region.code == policy.region_code)
         )
+
+        # Determine retroactive_start and retroactive_months from whichever extension has retroactive data
+        retroactive_start = ""
+        retroactive_months = 0
+        if si and si.is_retroactive == 1:
+            retroactive_start = si.retroactive_start or ""
+            retroactive_months = si.retroactive_months or 0
+        elif hf and hf.is_retroactive == 1:
+            retroactive_start = hf.retroactive_start or ""
+            retroactive_months = hf.retroactive_months or 0
 
         retroactive_policies.append(RetroactivePolicy(
             policy_id=policy.policy_id,
             title=policy.title,
             region_name=region_name or policy.region_code,
             effective_start=policy.effective_start,
-            retroactive_start=si.retroactive_start or "",
-            retroactive_months=si.retroactive_months or 0,
-            si_upper_limit=si.si_upper_limit,
-            si_lower_limit=si.si_lower_limit
+            retroactive_start=retroactive_start,
+            retroactive_months=retroactive_months,
+            si_upper_limit=si.si_upper_limit if si else None,
+            si_lower_limit=si.si_lower_limit if si else None,
+            hf_upper_limit=hf.hf_upper_limit if hf else None,
+            hf_lower_limit=hf.hf_lower_limit if hf else None,
         ))
 
     return DashboardResponse(

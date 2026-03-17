@@ -4,10 +4,20 @@ from app.schemas.policy import (
     PolicyUpdate,
     PolicyResponse,
     PolicySocialInsuranceCreate,
+    PolicySocialInsuranceResponse,
+    PolicyHousingFundCreate,
+    PolicyHousingFundResponse,
+    PolicyListResponse,
+)
+from app.schemas.policy_avg_salary import (
+    AvgSalaryCreate,
+    AvgSalaryResponse,
+)
+from app.schemas.policy_talent import (
+    TalentPolicyCreate,
+    TalentPolicyResponse,
 )
 from app.schemas.review import (
-    ReviewSubmit,
-    ReviewResponse,
     ReviewUpdate,
 )
 from app.schemas.common import PaginatedResponse
@@ -17,8 +27,14 @@ __all__ = [
     "PolicyUpdate",
     "PolicyResponse",
     "PolicySocialInsuranceCreate",
-    "ReviewSubmit",
-    "ReviewResponse",
+    "PolicySocialInsuranceResponse",
+    "PolicyHousingFundCreate",
+    "PolicyHousingFundResponse",
+    "PolicyListResponse",
+    "AvgSalaryCreate",
+    "AvgSalaryResponse",
+    "TalentPolicyCreate",
+    "TalentPolicyResponse",
     "ReviewUpdate",
     "PaginatedResponse",
 ]

@@ -13,6 +13,7 @@ import ReviewDetail from './pages/Review/ReviewDetail'
 import AdminUsers from './pages/Admin/Users'
 import AdminAgents from './pages/Admin/Agents'
 import AdminRegions from './pages/Admin/Regions'
+import AdminPolicyTypes from './pages/Admin/PolicyTypes'
 import { useAuthStore } from './stores/auth'
 
 function App() {
@@ -57,6 +58,7 @@ function App() {
           <Route path="admin/users" element={<AdminUsers />} />
           <Route path="admin/agents" element={<AdminAgents />} />
           <Route path="admin/regions" element={<AdminRegions />} />
+          <Route path="admin/policy-types" element={<AdminPolicyTypes />} />
         </Route>
       </Routes>
     </BrowserRouter>

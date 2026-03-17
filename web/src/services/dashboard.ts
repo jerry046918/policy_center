@@ -12,18 +12,22 @@ export interface DashboardStats {
 
 export interface RecentPolicy {
   policy_id: string
+  policy_type?: string
   title: string
   region_name: string
   region_code: string
   effective_start: string
   status: string
-  si_upper_limit: number
-  si_lower_limit: number
+  si_upper_limit?: number
+  si_lower_limit?: number
+  hf_upper_limit?: number
+  hf_lower_limit?: number
 }
 
 export interface PendingReview {
   review_id: string
   policy_title: string
+  policy_type?: string
   region_name: string
   risk_level: string
   priority: string
@@ -39,8 +43,10 @@ export interface RetroactivePolicy {
   effective_start: string
   retroactive_start: string
   retroactive_months: number
-  si_upper_limit: number
-  si_lower_limit: number
+  si_upper_limit?: number
+  si_lower_limit?: number
+  hf_upper_limit?: number
+  hf_lower_limit?: number
 }
 
 export interface DashboardData {

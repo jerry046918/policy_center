@@ -15,6 +15,7 @@ import {
   LockOutlined,
   GlobalOutlined,
   ApiOutlined,
+  AppstoreOutlined,
 } from '@ant-design/icons'
 import { useAuthStore } from '../../stores/auth'
 import { changePassword } from '../../services/userService'
@@ -46,6 +47,7 @@ const menuItems = [
       { key: '/admin/users', label: '用户管理', icon: <TeamOutlined /> },
       { key: '/admin/agents', label: 'API Key 管理', icon: <ApiOutlined /> },
       { key: '/admin/regions', label: '地区管理', icon: <GlobalOutlined /> },
+      { key: '/admin/policy-types', label: '政策类型', icon: <AppstoreOutlined /> },
     ],
   },
 ]
@@ -74,11 +76,6 @@ export default function MainLayout() {
   }
 
   const userMenuItems = [
-    {
-      key: 'profile',
-      icon: <UserOutlined />,
-      label: '个人信息',
-    },
     {
       key: 'changePassword',
       icon: <LockOutlined />,

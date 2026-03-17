@@ -3,6 +3,7 @@ import api from './api'
 export interface ReviewItem {
   review_id: string
   policy_title: string
+  policy_type?: string
   region_code: string
   region_name?: string
   status: string
@@ -20,6 +21,7 @@ export interface ReviewItem {
 export interface ReviewDetail {
   review_id: string
   policy_id?: string
+  policy_type?: string
   status: string
   priority: string
   submitted_data: any
@@ -64,16 +66,6 @@ export async function getReview(reviewId: string): Promise<ReviewDetail> {
   return api.get(`/reviews/${reviewId}`)
 }
 
-// 认领审核任务
-export async function claimReview(reviewId: string): Promise<{ success: boolean }> {
-  return api.post(`/reviews/${reviewId}/claim`)
-}
-
-// 释放审核任务
-export async function releaseReview(reviewId: string, reason?: string): Promise<{ success: boolean }> {
-  return api.post(`/reviews/${reviewId}/release`, { reason })
-}
-
 // 通过审核
 export async function approveReview(reviewId: string, notes?: string): Promise<{ success: boolean; policy_id: string }> {
   return api.post(`/reviews/${reviewId}/approve`, { notes })
@@ -82,38 +74,4 @@ export async function approveReview(reviewId: string, notes?: string): Promise<{
 // 拒绝审核
 export async function rejectReview(reviewId: string, reason: string): Promise<{ success: boolean }> {
   return api.post(`/reviews/${reviewId}/reject`, { reason })
-}
-
-// 请求补充材料
-export async function requestClarification(reviewId: string, request: string): Promise<{ success: boolean }> {
-  return api.post(`/reviews/${reviewId}/clarify`, { request })
-}
-
-// 补充材料后重新提交
-export async function resubmitReview(reviewId: string, updatedData: any, notes: string): Promise<{ success: boolean }> {
-  return api.post(`/reviews/${reviewId}/resubmit`, { updated_data: updatedData, notes })
-}
-
-// 获取审核统计
-export async function getReviewStats(): Promise<{
-  success: boolean
-  data: {
-    status_counts: Record<string, number>
-    pending_by_priority: Record<string, number>
-    pending_by_risk: Record<string, number>
-    total_pending: number
-    sla_overdue: number
-    sla_warning: number
-  }
-}> {
-  return api.get('/reviews/stats/summary')
-}
-
-// 获取我的审核任务
-export async function getMyReviewTasks(params?: { status?: string; page?: number; page_size?: number }): Promise<{
-  success: boolean
-  data: any[]
-  total: number
-}> {
-  return api.get('/reviews/my/tasks', { params })
 }

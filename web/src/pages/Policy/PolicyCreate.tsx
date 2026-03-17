@@ -16,7 +16,8 @@ import {
   Divider,
 } from 'antd'
 import { SaveOutlined, ArrowLeftOutlined } from '@ant-design/icons'
-import { createPolicy, getRegions, initRegions } from '../../services/policy'
+import { createPolicy, getRegions, getPolicyTypes } from '../../services/policy'
+import type { PolicyTypeItem } from '../../services/policy'
 import type { PolicyCreateInput } from '../../types/policy'
 import './PolicyCreate.css'
 
@@ -29,15 +30,16 @@ export default function PolicyCreate() {
   const [loading, setLoading] = useState(false)
   const [isRetroactive, setIsRetroactive] = useState(false)
   const [regions, setRegions] = useState<any[]>([])
+  const [policyType, setPolicyType] = useState<string>('social_insurance')
+  const [policyTypes, setPolicyTypes] = useState<PolicyTypeItem[]>([])
 
   useEffect(() => {
     loadRegions()
+    loadPolicyTypes()
   }, [])
 
   const loadRegions = async () => {
     try {
-      // 先初始化地区数据
-      await initRegions()
       const data = await getRegions(undefined, 'province')
       setRegions(data || [])
     } catch (error) {
@@ -45,30 +47,51 @@ export default function PolicyCreate() {
     }
   }
 
+  const loadPolicyTypes = async () => {
+    try {
+      const data = await getPolicyTypes()
+      setPolicyTypes(data || [])
+    } catch (error) {
+      console.error('加载政策类型失败:', error)
+    }
+  }
+
+  // 获取当前类型的 field_schema
+  const currentTypeSchema = policyTypes.find(t => t.type_code === policyType)?.field_schema || {}
+
   const handleSubmit = async (values: any) => {
     setLoading(true)
     try {
-      const data: PolicyCreateInput = {
+      const baseData: any = {
+        policy_type: policyType,
         title: values.title,
         region_code: values.region_code,
         published_at: values.published_at.format('YYYY-MM-DD'),
         effective_start: values.effective_start.format('YYYY-MM-DD'),
         effective_end: values.effective_end?.format('YYYY-MM-DD'),
-        social_insurance: {
-          si_upper_limit: values.si_upper_limit,
-          si_lower_limit: values.si_lower_limit,
-          hf_upper_limit: values.hf_upper_limit,
-          hf_lower_limit: values.hf_lower_limit,
-          is_retroactive: values.is_retroactive,
-          retroactive_start: values.retroactive_start?.format('YYYY-MM-DD'),
-          coverage_types: values.coverage_types,
-          special_notes: values.special_notes,
-        },
         raw_content: values.raw_content,
       }
 
-      await createPolicy(data)
-      message.success('政策创建成功，已直接生效')
+      // 收集 type_data：从 field_schema 中获取所有字段名
+      const typeData: Record<string, any> = {}
+      for (const [fieldName, fieldDef] of Object.entries(currentTypeSchema) as [string, any][]) {
+        const val = values[fieldName]
+        if (val !== undefined && val !== null && val !== '') {
+          // 处理 DatePicker 类型的值
+          if (val && typeof val === 'object' && typeof val.format === 'function') {
+            typeData[fieldName] = val.format('YYYY-MM-DD')
+          } else if (fieldDef.type === 'object' && typeof val === 'string') {
+            // JSON 字符串 -> 对象
+            try { typeData[fieldName] = JSON.parse(val) } catch { typeData[fieldName] = val }
+          } else {
+            typeData[fieldName] = val
+          }
+        }
+      }
+      baseData.type_data = typeData
+
+      await createPolicy(baseData)
+      message.success('政策创建成功')
       navigate('/policies')
     } catch (error) {
       message.error('创建失败，请检查输入')
@@ -76,6 +99,114 @@ export default function PolicyCreate() {
       setLoading(false)
     }
   }
+
+  // 根据 field_schema 动态渲染表单字段
+  const renderDynamicFields = () => {
+    const entries = Object.entries(currentTypeSchema)
+    if (entries.length === 0) return null
+
+    return entries.map(([fieldName, schema]: [string, any]) => {
+      const { type, description, required, unit, items } = schema
+      const label = description + (unit ? ` (${unit})` : '')
+      const rules = required ? [{ required: true, message: `请输入${description}` }] : []
+
+      if (type === 'integer' || type === 'number') {
+        return (
+          <Col span={12} key={fieldName}>
+            <Form.Item name={fieldName} label={label} rules={rules}>
+              <InputNumber style={{ width: '100%' }} min={0} precision={type === 'integer' ? 0 : 2} />
+            </Form.Item>
+          </Col>
+        )
+      }
+
+      if (type === 'boolean') {
+        return (
+          <Col span={8} key={fieldName}>
+            <Form.Item name={fieldName} label={label} valuePropName="checked">
+              <Switch onChange={fieldName === 'is_retroactive' ? setIsRetroactive : undefined} />
+            </Form.Item>
+          </Col>
+        )
+      }
+
+      if (type === 'date') {
+        // 对追溯日期做条件展示
+        if (fieldName === 'retroactive_start') {
+          if (!isRetroactive) return null
+          return (
+            <Col span={12} key={fieldName}>
+              <Form.Item name={fieldName} label={label} rules={isRetroactive ? [{ required: true, message: `请选择${description}` }] : []}>
+                <DatePicker style={{ width: '100%' }} />
+              </Form.Item>
+            </Col>
+          )
+        }
+        return (
+          <Col span={12} key={fieldName}>
+            <Form.Item name={fieldName} label={label} rules={rules}>
+              <DatePicker style={{ width: '100%' }} />
+            </Form.Item>
+          </Col>
+        )
+      }
+
+      if (type === 'array' && items?.enum) {
+        return (
+          <Col span={24} key={fieldName}>
+            <Form.Item name={fieldName} label={label}>
+              <Select mode="multiple" placeholder={`选择${description}`}>
+                {items.enum.map((v: string) => (
+                  <Option key={v} value={v}>{v}</Option>
+                ))}
+              </Select>
+            </Form.Item>
+          </Col>
+        )
+      }
+
+      if (type === 'array') {
+        return (
+          <Col span={24} key={fieldName}>
+            <Form.Item name={fieldName} label={label}>
+              <Select mode="tags" placeholder={`输入${description}，按回车添加`} />
+            </Form.Item>
+          </Col>
+        )
+      }
+
+      if (type === 'object') {
+        return (
+          <Col span={24} key={fieldName}>
+            <Form.Item name={fieldName} label={label} help="请输入 JSON 格式数据">
+              <TextArea rows={3} placeholder={`{"key": "value"}`} />
+            </Form.Item>
+          </Col>
+        )
+      }
+
+      // string 类型
+      const maxLength = schema.max_length || 1000
+      if (maxLength > 200) {
+        return (
+          <Col span={24} key={fieldName}>
+            <Form.Item name={fieldName} label={label} rules={rules}>
+              <TextArea rows={3} maxLength={maxLength} placeholder={`请输入${description}`} />
+            </Form.Item>
+          </Col>
+        )
+      }
+      return (
+        <Col span={12} key={fieldName}>
+          <Form.Item name={fieldName} label={label} rules={rules}>
+            <Input maxLength={maxLength} placeholder={`请输入${description}`} />
+          </Form.Item>
+        </Col>
+      )
+    })
+  }
+
+  const currentTypeName = policyTypes.find(t => t.type_code === policyType)?.type_name || '类型数据'
 
   return (
     <div className="policy-create">
@@ -91,6 +222,7 @@ export default function PolicyCreate() {
         layout="vertical"
         onFinish={handleSubmit}
         initialValues={{
+          policy_type: 'social_insurance',
           is_retroactive: false,
           coverage_types: ['养老', '医疗', '失业', '工伤', '生育'],
         }}
@@ -150,104 +282,31 @@ export default function PolicyCreate() {
                   </Form.Item>
                 </Col>
               </Row>
-            </Card>
 
-            {/* 社保基数 */}
-            <Card title="社保公积金基数" style={{ marginTop: 16 }}>
-              <Row gutter={16}>
-                <Col span={12}>
-                  <Form.Item
-                    name="si_upper_limit"
-                    label="社保基数上限（元/月）"
-                    rules={[{ required: true, message: '请输入上限' }]}
-                  >
-                    <InputNumber
-                      style={{ width: '100%' }}
-                      min={0}
-                      precision={0}
-                      formatter={(value) => `¥ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                      parser={(value) => value!.replace(/\¥\s?|(,*)/g, '') as any}
-                    />
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  <Form.Item
-                    name="si_lower_limit"
-                    label="社保基数下限（元/月）"
-                    rules={[{ required: true, message: '请输入下限' }]}
-                  >
-                    <InputNumber
-                      style={{ width: '100%' }}
-                      min={0}
-                      precision={0}
-                      formatter={(value) => `¥ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                      parser={(value) => value!.replace(/\¥\s?|(,*)/g, '') as any}
-                    />
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              <Row gutter={16}>
-                <Col span={12}>
-                  <Form.Item name="hf_upper_limit" label="公积金上限（元/月）">
-                    <InputNumber
-                      style={{ width: '100%' }}
-                      min={0}
-                      precision={0}
-                      formatter={(value) => `¥ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                      parser={(value) => value!.replace(/\¥\s?|(,*)/g, '') as any}
-                    />
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  <Form.Item name="hf_lower_limit" label="公积金下限（元/月）">
-                    <InputNumber
-                      style={{ width: '100%' }}
-                      min={0}
-                      precision={0}
-                      formatter={(value) => `¥ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                      parser={(value) => value!.replace(/\¥\s?|(,*)/g, '') as any}
-                    />
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              <Divider />
-
-              <Row gutter={16}>
-                <Col span={8}>
-                  <Form.Item name="is_retroactive" label="追溯生效" valuePropName="checked">
-                    <Switch onChange={setIsRetroactive} />
-                  </Form.Item>
-                </Col>
-                {isRetroactive && (
-                  <Col span={16}>
-                    <Form.Item
-                      name="retroactive_start"
-                      label="追溯开始日期"
-                      rules={[{ required: isRetroactive, message: '请选择追溯日期' }]}
-                    >
-                      <DatePicker style={{ width: '100%' }} />
-                    </Form.Item>
-                  </Col>
-                )}
-              </Row>
-
-              <Form.Item name="coverage_types" label="险种覆盖">
-                <Select mode="multiple" placeholder="选择覆盖险种">
-                  <Option value="养老">养老</Option>
-                  <Option value="医疗">医疗</Option>
-                  <Option value="失业">失业</Option>
-                  <Option value="工伤">工伤</Option>
-                  <Option value="生育">生育</Option>
-                  <Option value="公积金">公积金</Option>
+              <Form.Item name="policy_type" label="政策类型" rules={[{ required: true }]}>
+                <Select
+                  onChange={(v: string) => {
+                    setPolicyType(v)
+                    setIsRetroactive(false)
+                  }}
+                >
+                  {policyTypes.map((t) => (
+                    <Option key={t.type_code} value={t.type_code}>
+                      {t.type_name}
+                    </Option>
+                  ))}
                 </Select>
               </Form.Item>
-
-              <Form.Item name="special_notes" label="特殊说明">
-                <TextArea rows={3} placeholder="如基数计算公式、特殊情况说明等" maxLength={1000} />
-              </Form.Item>
             </Card>
+
+            {/* 类型特定字段 - 动态渲染 */}
+            {Object.keys(currentTypeSchema).length > 0 && (
+              <Card title={currentTypeName} style={{ marginTop: 16 }}>
+                <Row gutter={16}>
+                  {renderDynamicFields()}
+                </Row>
+              </Card>
+            )}
           </Col>
 
           {/* 右侧：原始内容 */}

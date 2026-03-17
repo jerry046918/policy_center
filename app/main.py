@@ -48,7 +48,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
-    description="社保公积金基数政策管理平台 - REST API 数据基础设施",
+    description="政策数据管理平台 - REST API 数据基础设施",
     lifespan=lifespan,
 )
 

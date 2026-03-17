@@ -4,7 +4,7 @@ import type { Policy, PolicyListItem, PolicyCreateInput, PolicyUpdateInput } fro
 export interface PolicyListParams {
   region_code?: string
   year?: number
-  status?: string
+  policy_type?: string
   is_retroactive?: boolean
   keyword?: string
   page?: number
@@ -67,25 +67,6 @@ export async function getPolicyVersions(policyId: string): Promise<{ success: bo
   return api.get(`/policies/${policyId}/versions`)
 }
 
-// 激活政策
-export async function activatePolicy(policyId: string): Promise<{ success: boolean; status: string }> {
-  return api.post(`/policies/${policyId}/activate`)
-}
-
-// 撤销政策
-export async function revokePolicy(policyId: string): Promise<{ success: boolean; status: string }> {
-  return api.post(`/policies/${policyId}/revoke`)
-}
-
-// 检查重复
-export async function checkDuplicate(params: {
-  region_code?: string
-  effective_start?: string
-  exclude_policy_id?: string
-}): Promise<{ success: boolean; is_duplicate: boolean; existing_policy_id?: string }> {
-  return api.get('/policies/check-duplicate', { params })
-}
-
 // 获取地区列表
 export async function getRegions(parentCode?: string, level?: string): Promise<any[]> {
   const response: any = await api.get('/admin/regions', { params: { parent_code: parentCode, level } })
@@ -107,4 +88,19 @@ export async function createRegion(data: {
 // 初始化地区数据
 export async function initRegions(force: boolean = false): Promise<{ success: boolean; message: string; count?: number }> {
   return api.post('/admin/regions/init', null, { params: { force } })
+}
+
+// 获取政策类型列表
+export interface PolicyTypeItem {
+  type_code: string
+  type_name: string
+  description: string
+  field_schema: Record<string, any>
+  validation_rules: string[]
+  example_data: Record<string, any>
+}
+
+export async function getPolicyTypes(): Promise<PolicyTypeItem[]> {
+  const response: any = await api.get('/policies/types')
+  return response.data || []
 }

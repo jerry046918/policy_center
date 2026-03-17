@@ -1,18 +1,11 @@
 import { Card, Collapse, Empty, Tag } from 'antd'
 import { FileTextOutlined, LinkOutlined } from '@ant-design/icons'
+import type { SourceDocument } from '../types/policy'
 import './RawEvidenceCard.css'
-
-interface SourceDocument {
-  title?: string
-  doc_number?: string  // 官方文号
-  url: string
-  extracted_text?: string
-  document_type?: string
-}
 
 interface RawEvidence {
   // 新格式：多来源（审核队列使用）
-  sources?: SourceDocument[]
+  sources?: (SourceDocument & { document_type?: string })[]
   // 政策表使用的字段（JSON字符串）
   source_attachments?: string
 }

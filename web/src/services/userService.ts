@@ -9,11 +9,6 @@ interface UserListResponse {
   page_size: number
 }
 
-interface UserResponse {
-  success: boolean
-  data: User
-}
-
 // 获取用户列表
 export async function listUsers(params?: {
   is_active?: number
@@ -27,11 +22,6 @@ export async function listUsers(params?: {
 // 创建用户
 export async function createUser(data: UserCreateInput): Promise<User> {
   return api.post('/admin/users', data)
-}
-
-// 获取用户详情
-export async function getUser(userId: string): Promise<UserResponse> {
-  return api.get(`/admin/users/${userId}`)
 }
 
 // 切换用户状态

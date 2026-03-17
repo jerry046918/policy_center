@@ -1,14 +1,14 @@
-# Policy Center - 社保公积金基数政策管理平台
+# Policy Center - 政策数据管理平台
 
-MCP-First 数据基础设施平台，用于管理全国31个省级行政区的社保公积金基数政策。
+政策数据管理平台，用于管理全国31个省级行政区（332个地级市）的多类型政策（社保基数、公积金基数、平均工资、人才政策等）。
 
 ## 功能特性
 
-- **政策管理**: 支持社保基数上下限、公积金基数、追溯缴纳等业务逻辑
+- **政策管理**: 支持社保基数上下限、公积金基数、平均工资、人才政策等多种类型，支持追溯缴纳等业务逻辑
 - **审核流程**: Agent 提交 → AI 辅助校验 → 人工审核 → 发布
 - **版本管理**: 完整的版本历史、变更追踪、回滚支持
 - **地区管理**: 内置全国31省份及332个地级市的行政区划数据
-- **MCP 接口**: 标准化协议支持外部 Agent 接入
+- **Agent REST API**: 标准化 REST API 支持外部 Agent 接入
 
 ## 快速开始
 
@@ -32,18 +32,22 @@ cp .env.example .env
 ### 3. 启动服务
 
 ```bash
-# 启动后端（数据库和地区数据会自动初始化）
-python run.py
+# 一键启动前后端 + 自动创建测试 Agent
+python start.py
 
-# 启动前端开发服务器（新终端）
+# 或者分别启动：
+# 后端
+python run.py
+# 前端（新终端）
 cd web && npm run dev
 ```
 
 ### 4. 访问
 
-- **前端界面**: http://localhost:5173 (或 Vite 分配的端口)
+- **前端界面**: http://localhost:3000 (start.py) 或 http://localhost:5173 (npm run dev)
 - **API 文档**: http://localhost:8000/docs
 - **默认登录**: admin / admin123
+- **测试 Agent API Key**: `pk_test_1234567890abcdef1234567890abcdef` (start.py 自动创建)
 
 ## Docker 部署
 
@@ -73,7 +77,7 @@ policy_center/
 │   ├── models/              # SQLAlchemy ORM 模型
 │   ├── schemas/             # Pydantic 请求/响应模式
 │   ├── services/            # 业务逻辑层
-│   ├── utils/               # 工具函数（缓存、定时任务）
+│   ├── utils/               # 工具函数
 │   ├── config.py            # 配置管理
 │   ├── database.py          # 数据库连接与初始化
 │   └── main.py              # FastAPI 应用入口
@@ -90,6 +94,8 @@ policy_center/
 ├── uploads/                  # 上传文件存储
 ├── tests/                    # 测试文件
 ├── requirements.txt          # Python 依赖
+├── start.py                  # 一键启动脚本（前后端 + 测试 Agent）
+├── run.py                    # 后端启动脚本
 ├── Dockerfile
 ├── docker-compose.yml
 └── .env.example
@@ -115,12 +121,13 @@ curl -X POST "http://localhost:8000/api/v1/admin/regions/init?force=true" \
 
 | 端点 | 方法 | 描述 |
 |------|------|------|
-| `/api/agent/submit` | POST | 提交政策到审核队列 |
-| `/api/agent/policies` | GET | 查询已发布政策 |
-| `/api/agent/check-duplicate` | POST | 检查重复提交 |
 | `/api/agent/schema` | GET | 获取政策 Schema |
+| `/api/agent/check-duplicate` | GET | 检查重复提交 |
+| `/api/agent/policies` | GET | 查询已发布政策 |
+| `/api/agent/submit` | POST | 提交政策到审核队列 |
+| `/api/agent/submissions` | GET | 跟踪提交审核状态 |
 
-认证方式：`Authorization: Bearer <api_key>` + `X-Agent-ID: <agent_id>`
+认证方式：`Authorization: Bearer <api_key>`
 
 ## 技术栈
 
@@ -130,7 +137,6 @@ curl -X POST "http://localhost:8000/api/v1/admin/regions/init?force=true" \
 | ORM | SQLAlchemy 2.0 (async) |
 | 数据库 | SQLite (WAL 模式) |
 | 缓存 | cachetools (内存) |
-| 定时任务 | APScheduler |
 | 前端框架 | React 18 + TypeScript |
 | 构建 | Vite |
 | UI 组件 | Ant Design 5 |

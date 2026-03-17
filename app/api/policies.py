@@ -1,4 +1,4 @@
-"""政策管理 API"""
+"""政策管理 API（支持多类型扩展）"""
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Path
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_
@@ -21,6 +21,7 @@ from app.schemas.common import PaginatedResponse
 from app.api.auth import get_current_user, UserAuth
 
 from app.services.policy_service import PolicyService
+from app.services.policy_type_registry import get_registry
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -40,6 +41,7 @@ async def get_region_name(session: AsyncSession, region_code: str) -> Optional[s
 async def list_policies(
     region_code: Optional[str] = Query(None, min_length=0, max_length=6),
     year: Optional[int] = Query(None, ge=1900, le=2100),
+    policy_type: Optional[str] = Query(None, description="政策类型编码筛选"),
     is_retroactive: Optional[bool] = Query(None),
     keyword: Optional[str] = Query(None, max_length=100),
     page: int = Query(1, ge=1),
@@ -51,67 +53,86 @@ async def list_policies(
     政策列表查询（仅展示生效中的政策）
 
     支持筛选:
-    - region_code: 地区编码（6位数字）
+    - region_code: 地区编码
     - year: 政策年度
-    - is_retroactive: 是否追溯
+    - policy_type: 政策类型
+    - is_retroactive: 是否追溯（仅社保类型）
     - keyword: 关键词搜索
     """
     try:
-        # 构建基础查询 - 只查询生效中的政策
+        registry = get_registry()
+
         base_query = select(Policy).where(
             Policy.deleted_at.is_(None),
             Policy.status == "active"
         )
 
-        # 筛选条件
         if region_code:
             base_query = base_query.where(Policy.region_code == region_code)
         if year:
             base_query = base_query.where(Policy.policy_year == year)
+        if policy_type:
+            base_query = base_query.where(Policy.policy_type == policy_type)
         if keyword:
             base_query = base_query.where(
                 Policy.title.contains(keyword)
             )
 
-        # 处理追溯筛选（需要关联社保表）
+        # 追溯筛选（仅社保类型有此概念）
         if is_retroactive is not None:
             si_subquery = select(PolicySocialInsurance.policy_id).where(
                 PolicySocialInsurance.is_retroactive == (1 if is_retroactive else 0)
             )
             base_query = base_query.where(Policy.policy_id.in_(si_subquery))
 
-        # 统计总数
         count_query = select(func.count()).select_from(base_query.subquery())
         total = await session.scalar(count_query) or 0
 
-        # 分页和排序
         base_query = base_query.order_by(Policy.effective_start.desc())
         base_query = base_query.offset((page - 1) * page_size).limit(page_size)
 
         result = await session.execute(base_query)
         policies = result.scalars().all()
 
-        # 获取关联数据
+        service = PolicyService(session)
         items = []
         for p in policies:
             region_name = await get_region_name(session, p.region_code)
 
-            # 获取社保数据
-            si_result = await session.execute(
-                select(PolicySocialInsurance).where(PolicySocialInsurance.policy_id == p.policy_id)
-            )
-            si = si_result.scalar_one_or_none()
+            # 获取扩展数据
+            ext = await service._get_extension(p.policy_id, p.policy_type)
+            type_data = service._extension_to_response(ext, p.policy_type)
+
+            # 构建列表摘要
+            type_summary = None
+            si_upper = None
+            si_lower = None
+            is_retro = False
+
+            if p.policy_type in ("social_insurance", "social_insurance_base") and ext:
+                si_upper = ext.si_upper_limit
+                si_lower = ext.si_lower_limit
+                is_retro = ext.is_retroactive == 1
+                type_summary = {"si_upper_limit": si_upper, "si_lower_limit": si_lower}
+            elif p.policy_type == "housing_fund" and ext:
+                is_retro = ext.is_retroactive == 1
+                type_summary = {"hf_upper_limit": ext.hf_upper_limit, "hf_lower_limit": ext.hf_lower_limit}
+            elif type_data:
+                # 其他类型，取前几个关键字段作为摘要
+                type_summary = {k: v for i, (k, v) in enumerate(type_data.items()) if i < 3 and v is not None}
 
             items.append(PolicyListResponse(
                 policy_id=p.policy_id,
+                policy_type=p.policy_type,
                 title=p.title,
                 region_code=p.region_code,
                 region_name=region_name,
-                si_upper_limit=si.si_upper_limit if si else None,
-                si_lower_limit=si.si_lower_limit if si else None,
+                type_summary=type_summary,
+                si_upper_limit=si_upper,
+                si_lower_limit=si_lower,
                 effective_start=p.effective_start,
                 status=p.status,
-                is_retroactive=si.is_retroactive == 1 if si else False
+                is_retroactive=is_retro,
             ))
 
         return PaginatedResponse(
@@ -128,10 +149,40 @@ async def list_policies(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/types")
+async def list_policy_types(
+    current_user: UserAuth = Depends(get_current_user)
+):
+    """
+    获取所有支持的政策类型
+
+    返回系统中注册的所有政策类型及其元数据。
+    """
+    registry = get_registry()
+    types = registry.list_all()
+
+    return {
+        "success": True,
+        "data": [
+            {
+                "type_code": t.type_code,
+                "type_name": t.type_name,
+                "description": t.description,
+                "field_schema": t.field_schema,
+                "validation_rules": t.validation_rules,
+                "example_data": t.example_data,
+            }
+            for t in types
+        ],
+        "total": len(types)
+    }
+
+
 @router.get("/check-duplicate")
 async def check_duplicate(
     region_code: Optional[str] = Query(None),
     effective_start: Optional[str] = Query(None),
+    policy_type: Optional[str] = Query(None, description="政策类型"),
     exclude_policy_id: Optional[str] = Query(None),
     session: AsyncSession = Depends(get_session),
     current_user: UserAuth = Depends(get_current_user)
@@ -142,6 +193,7 @@ async def check_duplicate(
         result = await service.check_duplicate(
             region_code=region_code,
             effective_start=effective_start,
+            policy_type=policy_type,
             exclude_policy_id=exclude_policy_id
         )
         return {"success": True, **result}
@@ -156,43 +208,34 @@ async def get_policy(
     session: AsyncSession = Depends(get_session),
     current_user: UserAuth = Depends(get_current_user)
 ):
-    """获取政策详情"""
+    """获取政策详情（支持所有类型）"""
     try:
-        result = await session.execute(
-            select(Policy).where(
-                Policy.policy_id == policy_id,
-                Policy.deleted_at.is_(None)
-            )
-        )
-        policy = result.scalar_one_or_none()
+        service = PolicyService(session)
+        data = await service.get_policy_with_extension(policy_id)
 
-        if not policy:
+        if not data:
             raise HTTPException(status_code=404, detail="政策不存在")
 
-        # 获取地区名称
+        policy = data["policy"]
+        ext = data.get("extension")
+        type_data = data.get("type_data")
+
         region_name = await get_region_name(session, policy.region_code)
 
-        # 获取社保数据
-        si_result = await session.execute(
-            select(PolicySocialInsurance).where(PolicySocialInsurance.policy_id == policy_id)
-        )
-        si = si_result.scalar_one_or_none()
-
+        # 向后兼容：如果是社保类型，同时填充 social_insurance
         si_response = None
-        if si:
+        if policy.policy_type in ("social_insurance", "social_insurance_base") and ext:
             si_response = PolicySocialInsuranceResponse(
-                si_upper_limit=si.si_upper_limit,
-                si_lower_limit=si.si_lower_limit,
-                si_avg_salary_ref=si.si_avg_salary_ref,
-                hf_upper_limit=si.hf_upper_limit,
-                hf_lower_limit=si.hf_lower_limit,
-                is_retroactive=si.is_retroactive == 1,
-                retroactive_start=si.retroactive_start,
-                retroactive_months=si.retroactive_months,
-                coverage_types=json.loads(si.coverage_types) if si.coverage_types else [],
-                change_rate_upper=float(si.change_rate_upper) if si.change_rate_upper else None,
-                change_rate_lower=float(si.change_rate_lower) if si.change_rate_lower else None,
-                special_notes=si.special_notes
+                si_upper_limit=ext.si_upper_limit,
+                si_lower_limit=ext.si_lower_limit,
+                si_avg_salary_ref=ext.si_avg_salary_ref,
+                is_retroactive=ext.is_retroactive == 1,
+                retroactive_start=ext.retroactive_start,
+                retroactive_months=ext.retroactive_months,
+                coverage_types=json.loads(ext.coverage_types) if ext.coverage_types else [],
+                change_rate_upper=float(ext.change_rate_upper) if ext.change_rate_upper else None,
+                change_rate_lower=float(ext.change_rate_lower) if ext.change_rate_lower else None,
+                special_notes=ext.special_notes
             )
 
         return PolicyResponse(
@@ -208,6 +251,7 @@ async def get_policy(
             policy_year=policy.policy_year,
             status=policy.status,
             version=policy.version,
+            type_data=type_data,
             social_insurance=si_response,
             created_at=policy.created_at,
             updated_at=policy.updated_at,
@@ -230,9 +274,10 @@ async def create_policy(
     current_user: UserAuth = Depends(get_current_user)
 ):
     """
-    创建政策（人工入口）
+    创建政策（人工入口，支持多类型）
 
-    人工提交的政策直接生效，无需审核
+    通过 policy_type 字段指定政策类型，type_data 中传入对应的扩展数据。
+    为兼容旧接口，仍然支持使用 social_insurance 字段。
     """
     try:
         service = PolicyService(session)
@@ -240,7 +285,8 @@ async def create_policy(
         # 检查重复
         duplicate_check = await service.check_duplicate(
             region_code=data.region_code,
-            effective_start=data.effective_start
+            effective_start=data.effective_start,
+            policy_type=data.policy_type
         )
 
         if duplicate_check.get("is_duplicate"):
@@ -251,14 +297,15 @@ async def create_policy(
             data=data,
             created_by=current_user.user_id,
             request_id=getattr(request.state, "request_id", None),
-            status="active"  # 人工提交直接生效
+            status="active"
         )
 
-        logger.info(f"Policy created and activated: {policy.policy_id} by {current_user.user_id}")
+        logger.info(f"Policy created and activated: {policy.policy_id} type={data.policy_type} by {current_user.user_id}")
 
         return {
             "success": True,
             "policy_id": policy.policy_id,
+            "policy_type": policy.policy_type,
             "status": "active",
             "version": policy.version,
             "duplicate_warning": duplicate_check if duplicate_check.get("is_duplicate") else None
@@ -347,7 +394,6 @@ async def get_policy_versions(
     try:
         from app.models.version import PolicyVersion
 
-        # 先检查政策是否存在
         policy_result = await session.execute(
             select(Policy.policy_id).where(Policy.policy_id == policy_id)
         )
@@ -392,7 +438,7 @@ async def activate_policy(
     session: AsyncSession = Depends(get_session),
     current_user: UserAuth = Depends(get_current_user)
 ):
-    """激活政策（审核通过后调用）"""
+    """激活政策"""
     try:
         service = PolicyService(session)
 

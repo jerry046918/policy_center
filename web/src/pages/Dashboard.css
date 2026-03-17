@@ -116,6 +116,9 @@
   padding: var(--md-spacing-md);
   margin: 0 calc(-1 * var(--md-spacing-lg));
   border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  /* 确保 flex 子元素不撑开容器 */
+  max-width: calc(100% + 2 * var(--md-spacing-lg));
 }
 
 .pending-review-item:last-child {
@@ -130,17 +133,52 @@
   background-color: rgba(25, 118, 210, 0.08);
 }
 
+/* 让 Meta 区域可收缩，防止撑破卡片 */
+.pending-review-item .ant-list-item-meta {
+  overflow: hidden;
+  min-width: 0;
+}
+
+.pending-review-item .ant-list-item-meta-content {
+  overflow: hidden;
+}
+
+.pending-review-item .ant-list-item-meta-title {
+  overflow: hidden;
+}
+
+.pending-review-item .ant-list-item-meta-title .ant-space {
+  max-width: 100%;
+  flex-wrap: nowrap;
+}
+
 .pending-review-item .review-title {
-  max-width: 200px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   display: inline-block;
   font-weight: 500;
+  max-width: 100%;
+  min-width: 0;
+  flex-shrink: 1;
 }
 
 .pending-review-item .ant-list-item-meta-description {
   font-size: var(--md-font-size-sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pending-review-item .ant-list-item-meta-description .ant-space {
+  max-width: 100%;
+  flex-wrap: nowrap;
+}
+
+/* 右侧操作区域固定宽度，不被压缩 */
+.pending-review-item > .ant-space {
+  flex-shrink: 0;
+  margin-left: var(--md-spacing-sm);
 }
 
 /* ========================================

@@ -14,6 +14,7 @@ import type { ColumnsType } from 'antd/es/table'
 import { getDashboard } from '../services/dashboard'
 import type { DashboardData, RecentPolicy, PendingReview, RetroactivePolicy } from '../services/dashboard'
 import { PRIORITY_MAP, RISK_LEVEL_MAP } from '../types/policy'
+import { getPolicyTypeLabel } from '../types/policy'
 import './Dashboard.css'
 
 const { Title, Text } = Typography
@@ -51,6 +52,16 @@ export default function Dashboard() {
       ),
     },
     {
+      title: '类型',
+      dataIndex: 'policy_type',
+      key: 'policy_type',
+      width: 130,
+      render: (type: string) => {
+        const config = getPolicyTypeLabel(type)
+        return <Tag color={config.color}>{config.label}</Tag>
+      },
+    },
+    {
       title: '地区',
       dataIndex: 'region_name',
       key: 'region_name',
@@ -61,20 +72,6 @@ export default function Dashboard() {
       dataIndex: 'effective_start',
       key: 'effective_start',
       width: 120,
-    },
-    {
-      title: '社保上限',
-      dataIndex: 'si_upper_limit',
-      key: 'si_upper_limit',
-      width: 120,
-      render: (v) => v ? `¥${v.toLocaleString()}` : '-',
-    },
-    {
-      title: '社保下限',
-      dataIndex: 'si_lower_limit',
-      key: 'si_lower_limit',
-      width: 120,
-      render: (v) => v ? `¥${v.toLocaleString()}` : '-',
     },
     {
       title: '状态',
@@ -244,6 +241,9 @@ export default function Dashboard() {
                         }
                         description={
                           <Space split={<Text type="secondary">·</Text>}>
+                            <Tag color={getPolicyTypeLabel(item.policy_type).color} style={{ margin: 0 }}>
+                              {getPolicyTypeLabel(item.policy_type).label}
+                            </Tag>
                             <Text type="secondary">{item.region_name}</Text>
                             <Text type="secondary">{item.submitted_at}</Text>
                           </Space>

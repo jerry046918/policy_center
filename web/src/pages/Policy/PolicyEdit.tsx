@@ -53,24 +53,25 @@ export default function PolicyEdit() {
       const data = await getPolicy(policyId)
       setPolicy(data)
 
-      // 填充表单
+      // 填充表单 - 根据政策类型从不同来源读取
+      const si = data.social_insurance || data.type_data || {}
       form.setFieldsValue({
         title: data.title,
         region_code: data.region_code,
         published_at: data.published_at ? dayjs(data.published_at) : null,
         effective_start: data.effective_start ? dayjs(data.effective_start) : null,
         effective_end: data.effective_end ? dayjs(data.effective_end) : null,
-        si_upper_limit: data.social_insurance?.si_upper_limit,
-        si_lower_limit: data.social_insurance?.si_lower_limit,
-        hf_upper_limit: data.social_insurance?.hf_upper_limit,
-        hf_lower_limit: data.social_insurance?.hf_lower_limit,
-        is_retroactive: data.social_insurance?.is_retroactive || false,
-        retroactive_start: data.social_insurance?.retroactive_start ? dayjs(data.social_insurance.retroactive_start) : null,
-        coverage_types: data.social_insurance?.coverage_types || ['养老', '医疗', '失业', '工伤', '生育'],
-        special_notes: data.social_insurance?.special_notes,
+        si_upper_limit: si.si_upper_limit,
+        si_lower_limit: si.si_lower_limit,
+        hf_upper_limit: si.hf_upper_limit,
+        hf_lower_limit: si.hf_lower_limit,
+        is_retroactive: si.is_retroactive || false,
+        retroactive_start: si.retroactive_start ? dayjs(si.retroactive_start) : null,
+        coverage_types: si.coverage_types || ['养老', '医疗', '失业', '工伤', '生育'],
+        special_notes: si.special_notes,
       })
 
-      setIsRetroactive(data.social_insurance?.is_retroactive || false)
+      setIsRetroactive(si.is_retroactive || false)
     } catch (error) {
       message.error('加载政策详情失败')
       navigate('/policies')
@@ -93,23 +94,33 @@ export default function PolicyEdit() {
 
     setSaving(true)
     try {
-      const data = {
+      const data: any = {
         title: values.title,
         published_at: values.published_at?.format('YYYY-MM-DD'),
         effective_start: values.effective_start?.format('YYYY-MM-DD'),
         effective_end: values.effective_end?.format('YYYY-MM-DD'),
-        social_insurance: {
-          si_upper_limit: values.si_upper_limit,
-          si_lower_limit: values.si_lower_limit,
+        change_reason: values.change_reason || (mode === 'major' ? '发布新版本' : '微调更新'),
+        create_new_version: mode === 'major',
+      }
+
+      const policyType = policy?.policy_type || 'social_insurance'
+      if (policyType === 'housing_fund') {
+        data.type_data = {
           hf_upper_limit: values.hf_upper_limit,
           hf_lower_limit: values.hf_lower_limit,
-          is_retroactive: values.is_retroactive,
+          is_retroactive: values.is_retroactive || false,
+          retroactive_start: values.retroactive_start?.format('YYYY-MM-DD'),
+          special_notes: values.special_notes,
+        }
+      } else {
+        data.type_data = {
+          si_upper_limit: values.si_upper_limit,
+          si_lower_limit: values.si_lower_limit,
+          is_retroactive: values.is_retroactive || false,
           retroactive_start: values.retroactive_start?.format('YYYY-MM-DD'),
           coverage_types: values.coverage_types,
           special_notes: values.special_notes,
-        },
-        change_reason: values.change_reason || (mode === 'major' ? '发布新版本' : '微调更新'),
-        create_new_version: mode === 'major',
+        }
       }
 
       await updatePolicy(id, data)
@@ -207,8 +218,69 @@ export default function PolicyEdit() {
               </Row>
             </Card>
 
-            {/* 社保基数 */}
-            <Card title="社保公积金基数" style={{ marginTop: 16 }}>
+            {/* 类型特定基数 */}
+            {policy?.policy_type === 'housing_fund' ? (
+              <Card title="公积金基数" style={{ marginTop: 16 }}>
+                <Row gutter={16}>
+                  <Col span={12}>
+                    <Form.Item
+                      name="hf_upper_limit"
+                      label="公积金上限（元/月）"
+                      rules={[{ required: true, message: '请输入上限' }]}
+                    >
+                      <InputNumber
+                        style={{ width: '100%' }}
+                        min={0}
+                        precision={0}
+                        formatter={(value) => `¥ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                        parser={(value) => value!.replace(/\¥\s?|(,*)/g, '') as any}
+                      />
+                    </Form.Item>
+                  </Col>
+                  <Col span={12}>
+                    <Form.Item
+                      name="hf_lower_limit"
+                      label="公积金下限（元/月）"
+                      rules={[{ required: true, message: '请输入下限' }]}
+                    >
+                      <InputNumber
+                        style={{ width: '100%' }}
+                        min={0}
+                        precision={0}
+                        formatter={(value) => `¥ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                        parser={(value) => value!.replace(/\¥\s?|(,*)/g, '') as any}
+                      />
+                    </Form.Item>
+                  </Col>
+                </Row>
+
+                <Divider />
+
+                <Row gutter={16}>
+                  <Col span={8}>
+                    <Form.Item name="is_retroactive" label="追溯生效" valuePropName="checked">
+                      <Switch onChange={setIsRetroactive} />
+                    </Form.Item>
+                  </Col>
+                  {isRetroactive && (
+                    <Col span={16}>
+                      <Form.Item
+                        name="retroactive_start"
+                        label="追溯开始日期"
+                        rules={[{ required: isRetroactive, message: '请选择追溯日期' }]}
+                      >
+                        <DatePicker style={{ width: '100%' }} />
+                      </Form.Item>
+                    </Col>
+                  )}
+                </Row>
+
+                <Form.Item name="special_notes" label="特殊说明">
+                  <TextArea rows={3} placeholder="如基数计算公式、特殊情况说明等" maxLength={1000} />
+                </Form.Item>
+              </Card>
+            ) : (
+              <Card title="社保基数" style={{ marginTop: 16 }}>
               <Row gutter={16}>
                 <Col span={12}>
                   <Form.Item
@@ -231,31 +303,6 @@ export default function PolicyEdit() {
                     label="社保基数下限（元/月）"
                     rules={[{ required: true, message: '请输入下限' }]}
                   >
-                    <InputNumber
-                      style={{ width: '100%' }}
-                      min={0}
-                      precision={0}
-                      formatter={(value) => `¥ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                      parser={(value) => value!.replace(/\¥\s?|(,*)/g, '') as any}
-                    />
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              <Row gutter={16}>
-                <Col span={12}>
-                  <Form.Item name="hf_upper_limit" label="公积金上限（元/月）">
-                    <InputNumber
-                      style={{ width: '100%' }}
-                      min={0}
-                      precision={0}
-                      formatter={(value) => `¥ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                      parser={(value) => value!.replace(/\¥\s?|(,*)/g, '') as any}
-                    />
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  <Form.Item name="hf_lower_limit" label="公积金下限（元/月）">
                     <InputNumber
                       style={{ width: '100%' }}
                       min={0}
@@ -295,7 +342,6 @@ export default function PolicyEdit() {
                   <Option value="失业">失业</Option>
                   <Option value="工伤">工伤</Option>
                   <Option value="生育">生育</Option>
-                  <Option value="公积金">公积金</Option>
                 </Select>
               </Form.Item>
 
@@ -303,6 +349,7 @@ export default function PolicyEdit() {
                 <TextArea rows={3} placeholder="如基数计算公式、特殊情况说明等" maxLength={1000} />
               </Form.Item>
             </Card>
+            )}
 
             {/* 更新说明 */}
             <Card title="更新说明" style={{ marginTop: 16 }}>

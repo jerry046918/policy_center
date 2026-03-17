@@ -154,16 +154,6 @@
 }
 
 /* ========================================
-   Change Rate Info
-   ======================================== */
-
-.change-rate {
-  margin-top: var(--md-spacing-md);
-  color: var(--md-on-surface-variant);
-  font-size: var(--md-font-size-sm);
-}
-
-/* ========================================
    Version History Timeline - Material Design
    ======================================== */
 

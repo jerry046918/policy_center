@@ -14,14 +14,9 @@ import { EyeOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import { getReviews } from '../../services/review'
 import type { ReviewItem } from '../../services/review'
+import { REVIEW_STATUS_MAP } from '../../types/policy'
+import { getPolicyTypeLabel } from '../../types/policy'
 import './ReviewCenter.css'
-
-const STATUS_MAP: Record<string, { label: string; color: string }> = {
-  pending: { label: '待审核', color: 'orange' },
-  claimed: { label: '审核中', color: 'blue' },
-  approved: { label: '已通过', color: 'green' },
-  rejected: { label: '已拒绝', color: 'red' },
-}
 
 export default function ReviewCenter() {
   const navigate = useNavigate()
@@ -63,6 +58,16 @@ export default function ReviewCenter() {
       ),
     },
     {
+      title: '类型',
+      dataIndex: 'policy_type',
+      key: 'policy_type',
+      width: 130,
+      render: (type: string) => {
+        const config = getPolicyTypeLabel(type)
+        return <Tag color={config.color}>{config.label}</Tag>
+      },
+    },
+    {
       title: '地区',
       dataIndex: 'region_name',
       key: 'region_name',
@@ -87,7 +92,7 @@ export default function ReviewCenter() {
       key: 'status',
       width: 100,
       render: (status) => {
-        const config = STATUS_MAP[status] || { label: status, color: 'default' }
+        const config = REVIEW_STATUS_MAP[status] || { label: status, color: 'default' }
         return <Tag color={config.color}>{config.label}</Tag>
       },
     },

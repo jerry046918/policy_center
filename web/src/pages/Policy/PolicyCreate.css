@@ -42,19 +42,6 @@
   flex: 1;
 }
 
-.page-header-actions {
-  display: flex;
-  gap: var(--md-spacing-sm);
-}
-
-.page-header-actions .ant-btn-primary {
-  box-shadow: var(--md-elevation-1);
-}
-
-.page-header-actions .ant-btn-primary:hover {
-  box-shadow: var(--md-elevation-2);
-}
-
 /* ========================================
    Form Card - Material Design
    ======================================== */
@@ -253,45 +240,6 @@
 
 .ant-picker-cell:hover:not(.ant-picker-cell-selected) .ant-picker-cell-inner {
   background: var(--md-primary-container);
-}
-
-/* ========================================
-   Form Actions
-   ======================================== */
-
-.form-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--md-spacing-sm);
-  padding-top: var(--md-spacing-md);
-  margin-top: var(--md-spacing-md);
-  border-top: 1px solid rgba(0, 0, 0, 0.06);
-}
-
-.form-actions .ant-btn {
-  min-width: 100px;
-  font-weight: 500;
-}
-
-.form-actions .ant-btn-primary {
-  box-shadow: var(--md-elevation-1);
-}
-
-.form-actions .ant-btn-primary:hover {
-  box-shadow: var(--md-elevation-2);
-}
-
-/* ========================================
-   Form Section Divider
-   ======================================== */
-
-.form-section-title {
-  font-size: var(--md-font-size-md);
-  font-weight: 500;
-  color: var(--md-on-surface);
-  margin-bottom: var(--md-spacing-md);
-  padding-bottom: var(--md-spacing-sm);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 /* ========================================

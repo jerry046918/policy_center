@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Policy Center (社保公积金基数政策管理平台) is an MCP-First data infrastructure platform for managing social insurance and housing fund base policies across China's 31 provinces. External agents submit policy data via MCP protocol while a web interface handles human review and administration.
+Policy Center (社保公积金基数政策管理平台) is a data management platform for social insurance and housing fund base policies across China's 31 provinces. It supports multiple policy types (social insurance base, average salary, talent policies, and custom types). External agents submit policy data via Agent REST API (`/api/agent/*`) while a web interface handles human review and administration.
 
 ## Development Commands
 
@@ -65,7 +65,7 @@ app/
 ├── models/        # SQLAlchemy ORM models
 ├── schemas/       # Pydantic request/response schemas
 ├── services/      # Business logic layer
-├── utils/         # Helpers (cache, scheduler)
+├── utils/         # Helpers
 ├── config.py      # Pydantic Settings configuration
 ├── database.py    # Async SQLAlchemy setup
 └── main.py        # FastAPI app entry point
@@ -99,23 +99,28 @@ src/
 - Region data loaded from `data/regions.json` via `/api/admin/regions/init`
 
 ### Key Models
-- `policies`: Main policy table (title, region_code, effective dates, status, version)
-- `policy_social_insurance`: SI/HF limits (si_upper/lower_limit, hf_upper/lower_limit, is_retroactive)
+- `policies`: Main policy table (title, region_code, effective dates, status, version, policy_type)
+- `policy_social_insurance`: Social insurance base limits (si_upper/lower_limit, is_retroactive, coverage_types)
+- `policy_housing_fund`: Housing fund base limits (hf_upper/lower_limit, is_retroactive)
+- `policy_avg_salary`: Average salary data (avg_salary_total/monthly, statistics_year, growth_rate)
+- `policy_talent`: Talent policy data (talent_categories, subsidy_standards, education_requirement)
+- `policy_type_definitions`: Registry of all policy types (built-in and dynamic)
 - `review_queue`: Pending reviews from agent submissions
 - `policy_versions`: Version history with snapshots
+- `audit_logs`: Operation audit trail
 - `regions`: Administrative regions dictionary
+- `agent_credentials`: Agent API key storage
 
-## MCP Interface
+## Agent REST API
 
-**Note**: MCP server implementation is planned in `app/mcp/` but not yet implemented.
+External agents interact via REST API at `/api/agent/*`:
+- `GET /api/agent/schema`: Get policy type schema and field definitions
+- `GET /api/agent/check-duplicate`: Check for duplicate submissions
+- `GET /api/agent/policies`: Query published policies
+- `POST /api/agent/submit`: Submit new policy data for review
+- `GET /api/agent/submissions`: Track submission review status
 
-External agents interact via MCP tools:
-- `submit_policy_for_review`: Submit new policy data
-- `query_policies`: Query published policies
-- `check_duplicate`: Check for duplicate submissions
-- `get_policy_schema`: Get validation schema
-
-Authentication: `Authorization: Bearer <api_key>` + `X-Agent-ID: <agent_id>`
+Authentication: `Authorization: Bearer <api_key>`
 
 ## Frontend State Management
 
@@ -130,12 +135,13 @@ Authentication: `Authorization: Bearer <api_key>` + `X-Agent-ID: <agent_id>`
   "data": [...],
   "total": 100,
   "page": 1,
-  "page_size": 20
+  "page_size": 20,
+  "total_pages": 5
 }
 ```
 
 ## Important Files
 
-- `technical_spec.md`: Complete system specification
+- `AGENTS.md`: Agent API reference and submission workflow guide
 - `data/regions.json`: Province/city data for initialization
 - `.env.example`: Environment configuration template

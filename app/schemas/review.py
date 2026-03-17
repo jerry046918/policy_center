@@ -1,75 +1,6 @@
 """审核队列相关 Schema"""
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
-from datetime import datetime
-import re
-
-
-class ReviewSubmit(BaseModel):
-    """Agent 提交政策审核请求"""
-    idempotency_key: Optional[str] = Field(None, description="幂等键")
-    policy_type: str = Field(default="social_insurance_base")
-
-    title: str = Field(..., max_length=500)
-    region_code: str = Field(..., pattern=r"^\d{6}$")
-
-    extracted_text: Optional[str] = Field(None, description="OCR 或爬取文本")
-    source_document_base64: Optional[str] = Field(None, description="PDF/图片 Base64")
-
-    published_at: str = Field(..., description="发布日期")
-    effective_start: str = Field(..., description="生效日期")
-    effective_end: Optional[str] = Field(None)
-
-    si_upper_limit: int = Field(..., gt=0, description="社保上限")
-    si_lower_limit: int = Field(..., gt=0, description="社保下限")
-    hf_upper_limit: Optional[int] = Field(None, gt=0)
-    hf_lower_limit: Optional[int] = Field(None, gt=0)
-
-    is_retroactive: bool = Field(default=False)
-    retroactive_start: Optional[str] = Field(None)
-
-    coverage_types: List[str] = Field(
-        default=["养老", "医疗", "失业", "工伤", "生育"]
-    )
-    special_notes: Optional[str] = Field(None, max_length=1000)
-
-    priority: str = Field(default="normal")
-
-    @field_validator("si_lower_limit")
-    @classmethod
-    def validate_si_limits(cls, v, info):
-        si_upper = info.data.get("si_upper_limit")
-        if si_upper and v >= si_upper:
-            raise ValueError("社保上限必须大于下限")
-        return v
-
-    @field_validator("priority")
-    @classmethod
-    def validate_priority(cls, v):
-        if v not in ["low", "normal", "high", "urgent"]:
-            raise ValueError("优先级必须是 low/normal/high/urgent")
-        return v
-
-
-class ReviewAIAnalysis(BaseModel):
-    """AI 分析结果"""
-    is_duplicate: bool = False
-    duplicate_policy_id: Optional[str] = None
-    change_rate: Optional[float] = None
-    retroactive_months: Optional[int] = None
-    risk_level: str = "low"
-    risk_tags: List[str] = []
-    warnings: List[str] = []
-
-
-class ReviewResponse(BaseModel):
-    """审核提交响应"""
-    review_id: str
-    status: str = "pending_review"
-    policy_id: Optional[str] = None
-    warnings: List[str] = []
-    ai_analysis: Optional[ReviewAIAnalysis] = None
-    estimated_review_time: str = "24h"
 
 
 class ReviewUpdate(BaseModel):
@@ -83,6 +14,7 @@ class ReviewDetailResponse(BaseModel):
     """审核详情响应"""
     review_id: str
     policy_id: Optional[str] = None
+    policy_type: Optional[str] = None
     status: str
     priority: str
 
@@ -123,6 +55,7 @@ class ReviewListResponse(BaseModel):
     """审核列表项"""
     review_id: str
     policy_title: str
+    policy_type: Optional[str] = None
     region_code: str
     region_name: Optional[str] = None
     status: str

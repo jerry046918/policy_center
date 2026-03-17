@@ -143,6 +143,7 @@ async def list_reviews(
         items.append(ReviewListResponse(
             review_id=r.review_id,
             policy_title=submitted_data.get("title", ""),
+            policy_type=submitted_data.get("policy_type"),
             region_code=submitted_data.get("region_code", ""),
             region_name=region_name,
             status=r.status,
@@ -265,6 +266,7 @@ async def get_review(
     return ReviewDetailResponse(
         review_id=review.review_id,
         policy_id=review.policy_id,
+        policy_type=submitted_data.get("policy_type"),
         status=review.status,
         priority=review.priority,
         submitted_data=submitted_data,

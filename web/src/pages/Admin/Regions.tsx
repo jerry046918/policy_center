@@ -28,17 +28,8 @@ import {
 import type { DataNode } from 'antd/es/tree'
 
 import { getRegions, createRegion } from '../../services/policy'
+import type { Region } from '../../types/policy'
 import './Admin.css'
-
-interface Region {
-  code: string
-  name: string
-  level: string
-  parent_code?: string
-  full_path?: string
-  min_wage?: number
-  avg_salary?: number
-}
 
 const { Option } = Select
 

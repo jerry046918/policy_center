@@ -18,7 +18,6 @@ import {
 import {
   SearchOutlined,
   PlusOutlined,
-  ExportOutlined,
   EyeOutlined,
   DeleteOutlined,
   HistoryOutlined,
@@ -26,6 +25,7 @@ import {
 import type { ColumnsType } from 'antd/es/table'
 import { getPolicies, deletePolicy, getRegions } from '../../services/policy'
 import type { PolicyListItem, Region } from '../../types/policy'
+import { getPolicyTypeLabel } from '../../types/policy'
 import './PolicyList.css'
 
 const { Search } = Input
@@ -101,6 +101,16 @@ export default function PolicyList() {
       render: (text, record) => (
         <a onClick={() => navigate(`/policies/${record.policy_id}`)}>{text}</a>
       ),
+    },
+    {
+      title: '类型',
+      dataIndex: 'policy_type',
+      key: 'policy_type',
+      width: 130,
+      render: (type: string) => {
+        const config = getPolicyTypeLabel(type)
+        return <Tag color={config.color}>{config.label}</Tag>
+      },
     },
     {
       title: '地区',
@@ -237,7 +247,6 @@ export default function PolicyList() {
           </Col>
           <Col span={11} style={{ textAlign: 'right' }}>
             <Space>
-              <Button icon={<ExportOutlined />}>导出</Button>
               <Button
                 type="primary"
                 icon={<PlusOutlined />}

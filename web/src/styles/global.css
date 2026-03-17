@@ -291,17 +291,6 @@ body {
   border: none;
 }
 
-/* Status Tags */
-.status-tag {
-  font-size: var(--md-font-size-sm);
-}
-
-/* Retroactive Tag */
-.retroactive-tag {
-  background: #fff3e0;
-  color: #e65100;
-}
-
 /* ========================================
    Statistic Card Styles
    ======================================== */
@@ -331,23 +320,6 @@ body {
    Text Display & Line Break Handling
    ======================================== */
 
-.preserve-newlines {
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  word-break: break-word;
-}
-
-.preserve-newlines-strict {
-  white-space: pre-line;
-  word-wrap: break-word;
-}
-
-.text-content {
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  line-height: 1.7;
-}
-
 /* Extracted Text Container */
 .extracted-text {
   white-space: pre-wrap;
@@ -356,14 +328,6 @@ body {
   line-height: 1.6;
   font-family: 'Roboto Mono', 'Consolas', 'Monaco', monospace;
   font-size: var(--md-font-size-sm);
-}
-
-/* Special Notes */
-.special-notes {
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  line-height: 1.7;
-  color: var(--md-on-surface-variant);
 }
 
 /* ========================================
@@ -514,26 +478,3 @@ body {
 .ant-card {
   animation: fadeIn var(--md-transition-normal) var(--md-easing-decelerate);
 }
-
-/* ========================================
-   Utility Classes
-   ======================================== */
-
-.elevation-1 { box-shadow: var(--md-elevation-1); }
-.elevation-2 { box-shadow: var(--md-elevation-2); }
-.elevation-3 { box-shadow: var(--md-elevation-3); }
-
-.surface { background: var(--md-surface); }
-.surface-variant { background: var(--md-surface-variant); }
-.surface-container { background: var(--md-surface-container); }
-
-.text-primary { color: var(--md-primary); }
-.text-secondary { color: var(--md-secondary); }
-.text-success { color: var(--md-success); }
-.text-warning { color: var(--md-warning); }
-.text-error { color: var(--md-error); }
-.text-muted { color: var(--md-on-surface-variant); }
-
-.rounded-sm { border-radius: var(--md-radius-sm); }
-.rounded-md { border-radius: var(--md-radius-md); }
-.rounded-lg { border-radius: var(--md-radius-lg); }

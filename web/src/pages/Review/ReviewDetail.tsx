@@ -29,16 +29,11 @@ import {
 import type { ReviewDetail } from '../../services/review'
 import PolicyContentCard from '../../components/PolicyContentCard'
 import RawEvidenceCard from '../../components/RawEvidenceCard'
+import { REVIEW_STATUS_MAP } from '../../types/policy'
+import { getPolicyTypeLabel } from '../../types/policy'
 import './ReviewDetail.css'
 
 const { TextArea } = Input
-
-const STATUS_MAP: Record<string, { label: string; color: string }> = {
-  pending: { label: '待审核', color: 'orange' },
-  claimed: { label: '审核中', color: 'blue' },
-  approved: { label: '已通过', color: 'green' },
-  rejected: { label: '已拒绝', color: 'red' },
-}
 
 export default function ReviewDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -139,7 +134,8 @@ export default function ReviewDetailPage() {
   }
 
   const data = review.submitted_data
-  const statusConfig = STATUS_MAP[review.status] || { label: review.status, color: 'default' }
+  const statusConfig = REVIEW_STATUS_MAP[review.status] || { label: review.status, color: 'default' }
+  const typeConfig = getPolicyTypeLabel(review.policy_type || data?.policy_type)
 
   // 是否为待审核状态
   const isPending = review.status === 'pending' || review.status === 'claimed'
@@ -153,6 +149,7 @@ export default function ReviewDetailPage() {
         </Button>
         <div className="header-tags">
           <Tag color={statusConfig.color}>{statusConfig.label}</Tag>
+          <Tag color={typeConfig.color}>{typeConfig.label}</Tag>
           {review.submit_type === 'update' ? (
             <Tag color="blue" icon={<SyncOutlined />}>更新政策</Tag>
           ) : (
@@ -188,20 +185,21 @@ export default function ReviewDetailPage() {
           <PolicyContentCard
             data={{
               title: data?.title,
+              policy_type: review.policy_type || data?.policy_type,
               region_name: review.region_name,
               region_code: data?.region_code,
               policy_year: data?.effective_start ? new Date(data.effective_start).getFullYear() : undefined,
               published_at: data?.published_at,
               effective_start: data?.effective_start,
               effective_end: data?.effective_end,
-              si_upper_limit: data?.si_upper_limit,
-              si_lower_limit: data?.si_lower_limit,
-              hf_upper_limit: data?.hf_upper_limit,
-              hf_lower_limit: data?.hf_lower_limit,
-              is_retroactive: data?.is_retroactive,
-              retroactive_start: data?.retroactive_start,
-              coverage_types: data?.coverage_types,
-              special_notes: data?.special_notes,
+              si_upper_limit: data?.si_upper_limit ?? data?.type_data?.si_upper_limit,
+              si_lower_limit: data?.si_lower_limit ?? data?.type_data?.si_lower_limit,
+              hf_upper_limit: data?.hf_upper_limit ?? data?.type_data?.hf_upper_limit,
+              hf_lower_limit: data?.hf_lower_limit ?? data?.type_data?.hf_lower_limit,
+              is_retroactive: data?.is_retroactive ?? data?.type_data?.is_retroactive,
+              retroactive_start: data?.retroactive_start ?? data?.type_data?.retroactive_start,
+              coverage_types: data?.coverage_types ?? data?.type_data?.coverage_types,
+              special_notes: data?.special_notes ?? data?.type_data?.special_notes,
             }}
           />
         </Col>

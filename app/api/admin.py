@@ -11,6 +11,7 @@ import logging
 import uuid
 
 from app.database import get_session
+from app.database import _build_regions_from_json
 from app.models.agent import AgentCredential, User
 from app.models.region import Region
 from app.api.auth import get_current_user, UserAuth, hash_password
@@ -545,50 +546,276 @@ def _get_basic_regions():
     ]
 
 
-def _build_regions_from_json(data: dict) -> list:
-    """从 JSON 数据构建地区列表"""
-    regions = []
+# ==================== 政策类型管理 ====================
 
-    # 添加国家节点
-    regions.append({
-        "code": "000000",
-        "name": "中国",
-        "level": "country",
-        "parent_code": None,
-        "full_path": "中国",
-        "path_materialized": "000000"
-    })
+class PolicyTypeCreate(BaseModel):
+    type_code: str
+    type_name: str
+    description: Optional[str] = None
+    field_schema: dict = {}
+    validation_rules: list = []
+    example_data: dict = {}
+    icon: Optional[str] = None
+    sort_order: int = 0
 
-    # 添加省份和城市
-    for province in data.get("provinces", []):
-        province_code = province["code"]
-        province_name = province["name"]
 
-        # 添加省份
-        regions.append({
-            "code": province_code,
-            "name": province_name,
-            "level": "province",
-            "parent_code": "000000",
-            "full_path": f"中国/{province_name}",
-            "path_materialized": f"000000.{province_code}"
+class PolicyTypeUpdate(BaseModel):
+    type_name: Optional[str] = None
+    description: Optional[str] = None
+    field_schema: Optional[dict] = None
+    validation_rules: Optional[list] = None
+    example_data: Optional[dict] = None
+    icon: Optional[str] = None
+    sort_order: Optional[int] = None
+    is_active: Optional[bool] = None
+
+
+@router.get("/policy-types")
+async def list_policy_types(
+    session: AsyncSession = Depends(get_session),
+    current_user: UserAuth = Depends(get_current_user)
+):
+    """
+    获取所有政策类型定义（包括内置和动态）
+
+    返回数据库中的完整类型信息，供管理后台展示和编辑。
+    """
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin required")
+
+    from app.models.policy_type import PolicyTypeDefinition
+    from app.models.policy import Policy
+
+    result = await session.execute(
+        select(PolicyTypeDefinition).order_by(
+            PolicyTypeDefinition.sort_order.asc(),
+            PolicyTypeDefinition.created_at.asc()
+        )
+    )
+    types = result.scalars().all()
+
+    # 统计每种类型的使用量
+    data = []
+    for t in types:
+        count_result = await session.scalar(
+            select(func.count()).select_from(Policy).where(
+                Policy.policy_type == t.type_code,
+                Policy.deleted_at.is_(None)
+            )
+        )
+
+        data.append({
+            "type_code": t.type_code,
+            "type_name": t.type_name,
+            "description": t.description,
+            "extension_table": t.extension_table,
+            "field_schema": json.loads(t.field_schema) if t.field_schema else {},
+            "validation_rules": json.loads(t.validation_rules) if t.validation_rules else [],
+            "example_data": json.loads(t.example_data) if t.example_data else {},
+            "is_builtin": t.is_builtin == 1,
+            "is_active": t.is_active == 1,
+            "sort_order": t.sort_order,
+            "icon": t.icon,
+            "policy_count": count_result or 0,
+            "created_at": t.created_at,
+            "updated_at": t.updated_at,
         })
 
-        # 添加该省份下的城市
-        cities = data.get("cities", {}).get(province_code, [])
-        for city in cities:
-            city_code = city["code"]
-            city_name = city["name"]
-            regions.append({
-                "code": city_code,
-                "name": city_name,
-                "level": "city",
-                "parent_code": province_code,
-                "full_path": f"中国/{province_name}/{city_name}",
-                "path_materialized": f"000000.{province_code}.{city_code}"
-            })
+    return {"success": True, "data": data, "total": len(data)}
 
-    return regions
+
+@router.post("/policy-types")
+async def create_policy_type(
+    data: PolicyTypeCreate,
+    session: AsyncSession = Depends(get_session),
+    current_user: UserAuth = Depends(get_current_user)
+):
+    """
+    创建新的动态政策类型
+
+    管理员可以通过此接口定义新的政策类型，指定其字段结构、验证规则和示例数据。
+    动态类型的扩展数据存储在 policies.extension_data JSON 字段中。
+    """
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin required")
+
+    from app.models.policy_type import PolicyTypeDefinition
+
+    # 检查编码格式
+    if not data.type_code or not data.type_code.replace("_", "").isalnum():
+        raise HTTPException(status_code=400, detail="type_code 只能包含字母、数字和下划线")
+
+    # 检查编码是否已存在
+    result = await session.execute(
+        select(PolicyTypeDefinition).where(
+            PolicyTypeDefinition.type_code == data.type_code
+        )
+    )
+    if result.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail=f"类型编码 '{data.type_code}' 已存在")
+
+    now = datetime.utcnow().isoformat()
+    td = PolicyTypeDefinition(
+        type_code=data.type_code,
+        type_name=data.type_name,
+        description=data.description,
+        extension_table=None,  # 动态类型无专用表
+        field_schema=json.dumps(data.field_schema, ensure_ascii=False),
+        validation_rules=json.dumps(data.validation_rules, ensure_ascii=False),
+        example_data=json.dumps(data.example_data, ensure_ascii=False),
+        is_builtin=0,
+        is_active=1,
+        sort_order=data.sort_order,
+        icon=data.icon,
+        created_at=now,
+        updated_at=now,
+    )
+
+    session.add(td)
+    await session.commit()
+
+    # 同步到 Python Registry
+    from app.services.builtin_policy_types import sync_db_policy_types
+    await sync_db_policy_types(session)
+
+    logger.info(f"Policy type created: {data.type_code} by {current_user.user_id}")
+
+    return {
+        "success": True,
+        "message": f"政策类型 '{data.type_name}' 创建成功",
+        "data": {
+            "type_code": td.type_code,
+            "type_name": td.type_name,
+            "is_builtin": False,
+        }
+    }
+
+
+@router.put("/policy-types/{type_code}")
+async def update_policy_type(
+    type_code: str,
+    data: PolicyTypeUpdate,
+    session: AsyncSession = Depends(get_session),
+    current_user: UserAuth = Depends(get_current_user)
+):
+    """
+    更新政策类型定义
+
+    内置类型只能修改 description, icon, sort_order, is_active。
+    动态类型可以修改所有字段。
+    """
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin required")
+
+    from app.models.policy_type import PolicyTypeDefinition
+
+    result = await session.execute(
+        select(PolicyTypeDefinition).where(
+            PolicyTypeDefinition.type_code == type_code
+        )
+    )
+    td = result.scalar_one_or_none()
+
+    if not td:
+        raise HTTPException(status_code=404, detail=f"政策类型 '{type_code}' 不存在")
+
+    is_builtin = td.is_builtin == 1
+
+    # 内置类型限制可修改字段
+    if is_builtin:
+        if data.description is not None:
+            td.description = data.description
+        if data.icon is not None:
+            td.icon = data.icon
+        if data.sort_order is not None:
+            td.sort_order = data.sort_order
+        if data.is_active is not None:
+            td.is_active = 1 if data.is_active else 0
+    else:
+        # 动态类型：所有字段可修改
+        if data.type_name is not None:
+            td.type_name = data.type_name
+        if data.description is not None:
+            td.description = data.description
+        if data.field_schema is not None:
+            td.field_schema = json.dumps(data.field_schema, ensure_ascii=False)
+        if data.validation_rules is not None:
+            td.validation_rules = json.dumps(data.validation_rules, ensure_ascii=False)
+        if data.example_data is not None:
+            td.example_data = json.dumps(data.example_data, ensure_ascii=False)
+        if data.icon is not None:
+            td.icon = data.icon
+        if data.sort_order is not None:
+            td.sort_order = data.sort_order
+        if data.is_active is not None:
+            td.is_active = 1 if data.is_active else 0
+
+    td.updated_at = datetime.utcnow().isoformat()
+    await session.commit()
+
+    # 同步到 Python Registry（仅动态类型需要重新加载）
+    if not is_builtin:
+        from app.services.builtin_policy_types import sync_db_policy_types
+        await sync_db_policy_types(session)
+
+    logger.info(f"Policy type updated: {type_code} by {current_user.user_id}")
+
+    return {"success": True, "message": f"政策类型 '{type_code}' 已更新"}
+
+
+@router.delete("/policy-types/{type_code}")
+async def delete_policy_type(
+    type_code: str,
+    session: AsyncSession = Depends(get_session),
+    current_user: UserAuth = Depends(get_current_user)
+):
+    """
+    删除政策类型
+
+    内置类型不可删除。有关联政策的类型不可删除。
+    """
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin required")
+
+    from app.models.policy_type import PolicyTypeDefinition
+    from app.models.policy import Policy
+
+    result = await session.execute(
+        select(PolicyTypeDefinition).where(
+            PolicyTypeDefinition.type_code == type_code
+        )
+    )
+    td = result.scalar_one_or_none()
+
+    if not td:
+        raise HTTPException(status_code=404, detail=f"政策类型 '{type_code}' 不存在")
+
+    if td.is_builtin == 1:
+        raise HTTPException(status_code=400, detail="内置类型不可删除")
+
+    # 检查是否有关联政策
+    policy_count = await session.scalar(
+        select(func.count()).select_from(Policy).where(
+            Policy.policy_type == type_code,
+            Policy.deleted_at.is_(None)
+        )
+    )
+    if policy_count and policy_count > 0:
+        raise HTTPException(
+            status_code=400,
+            detail=f"该类型下有 {policy_count} 条政策，无法删除。请先删除或迁移相关政策。"
+        )
+
+    await session.delete(td)
+    await session.commit()
+
+    # 从 Python Registry 移除
+    from app.services.policy_type_registry import get_registry
+    get_registry().unregister(type_code)
+
+    logger.info(f"Policy type deleted: {type_code} by {current_user.user_id}")
+
+    return {"success": True, "message": f"政策类型 '{type_code}' 已删除"}
 
 
 # ==================== 系统状态 ====================

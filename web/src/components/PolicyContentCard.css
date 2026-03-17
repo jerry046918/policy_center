@@ -101,29 +101,6 @@
 }
 
 /* ========================================
-   Coverage Types - Material Design
-   ======================================== */
-
-.coverage-types {
-  margin-top: var(--md-spacing-md);
-}
-
-.coverage-types-label {
-  margin-right: var(--md-spacing-sm);
-  color: var(--md-on-surface-variant);
-}
-
-.coverage-types .ant-tag {
-  font-weight: 500;
-  border-radius: var(--md-radius-xs);
-  border: none;
-  background: var(--md-primary-container);
-  color: var(--md-primary-dark);
-  padding: 2px 12px;
-  margin-bottom: var(--md-spacing-xs);
-}
-
-/* ========================================
    Special Notes - Material Design
    ======================================== */
 
@@ -148,14 +125,6 @@
   font-weight: 500;
   font-size: var(--md-font-size-lg);
   color: var(--md-on-surface);
-}
-
-/* ========================================
-   Row Gutter Styling
-   ======================================== */
-
-.policy-content-row {
-  row-gap: var(--md-spacing-md);
 }
 
 /* ========================================

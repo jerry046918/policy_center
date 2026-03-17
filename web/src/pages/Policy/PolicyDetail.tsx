@@ -20,6 +20,7 @@ import {
 import { getPolicy, getPolicyVersions } from '../../services/policy'
 import type { Policy } from '../../types/policy'
 import { POLICY_STATUS_MAP } from '../../types/policy'
+import { getPolicyTypeLabel } from '../../types/policy'
 import PolicyContentCard from '../../components/PolicyContentCard'
 import RawEvidenceCard from '../../components/RawEvidenceCard'
 import './PolicyDetail.css'
@@ -79,6 +80,7 @@ export default function PolicyDetail() {
   }
 
   const statusConfig = POLICY_STATUS_MAP[policy.status] || { label: policy.status, color: 'default' }
+  const typeConfig = getPolicyTypeLabel(policy.policy_type)
 
   const versionColumns = [
     { title: '版本', dataIndex: 'version_number', key: 'version', width: 80 },
@@ -111,6 +113,7 @@ export default function PolicyDetail() {
         </Button>
         <div className="header-tags">
           <Tag color={statusConfig.color}>{statusConfig.label}</Tag>
+          <Tag color={typeConfig.color}>{typeConfig.label}</Tag>
           {policy.region_name && <Tag color="blue">{policy.region_name}</Tag>}
         </div>
         <div className="header-actions">
@@ -126,20 +129,21 @@ export default function PolicyDetail() {
           <PolicyContentCard
             data={{
               title: policy.title,
+              policy_type: policy.policy_type,
               region_name: policy.region_name,
               region_code: policy.region_code,
               policy_year: policy.policy_year,
               published_at: policy.published_at,
               effective_start: policy.effective_start,
               effective_end: policy.effective_end,
-              si_upper_limit: policy.social_insurance?.si_upper_limit,
-              si_lower_limit: policy.social_insurance?.si_lower_limit,
-              hf_upper_limit: policy.social_insurance?.hf_upper_limit,
-              hf_lower_limit: policy.social_insurance?.hf_lower_limit,
-              is_retroactive: policy.social_insurance?.is_retroactive,
-              retroactive_start: policy.social_insurance?.retroactive_start,
-              coverage_types: policy.social_insurance?.coverage_types,
-              special_notes: policy.social_insurance?.special_notes,
+              si_upper_limit: policy.social_insurance?.si_upper_limit ?? policy.type_data?.si_upper_limit,
+              si_lower_limit: policy.social_insurance?.si_lower_limit ?? policy.type_data?.si_lower_limit,
+              hf_upper_limit: policy.type_data?.hf_upper_limit,
+              hf_lower_limit: policy.type_data?.hf_lower_limit,
+              is_retroactive: policy.social_insurance?.is_retroactive ?? policy.type_data?.is_retroactive,
+              retroactive_start: policy.social_insurance?.retroactive_start ?? policy.type_data?.retroactive_start,
+              coverage_types: policy.social_insurance?.coverage_types ?? policy.type_data?.coverage_types,
+              special_notes: policy.social_insurance?.special_notes ?? policy.type_data?.special_notes,
             }}
           />
         </Col>
