@@ -72,3 +72,9 @@ submit_*.json
 *.bak
 *.tmp
 backend.log
+
+# Windows reserved device name (spurious file)
+nul
+
+# Local AI tool config
+.codemaker/

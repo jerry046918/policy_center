@@ -30,7 +30,7 @@ export default function RawEvidenceCard({ evidence, rawEvidence, title = "原始
   }
 
   // 获取来源列表（兼容新旧格式）
-  const getSources = (): SourceDocument[] => {
+  const getSources = (): (SourceDocument & { document_type?: string })[] => {
     // 新格式：sources 数组
     if (data.sources && data.sources.length > 0) {
       return data.sources

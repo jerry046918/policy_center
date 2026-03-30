@@ -54,7 +54,7 @@ export default function PolicyEdit() {
       setPolicy(data)
 
       // 填充表单 - 根据政策类型从不同来源读取
-      const si = data.social_insurance || data.type_data || {}
+      const si: Record<string, any> = data.social_insurance || data.type_data || {}
       form.setFieldsValue({
         title: data.title,
         region_code: data.region_code,
