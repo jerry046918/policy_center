@@ -202,7 +202,7 @@ async def get_me(current_user: UserAuth = Depends(get_current_user)):
 
 class ChangePasswordRequest(BaseModel):
     current_password: str
-    new_password: str
+    new_password: str = Field(..., min_length=8)
 
 
 @router.post("/change-password")

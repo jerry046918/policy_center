@@ -113,6 +113,22 @@ async def list_reviews(
     result = await session.execute(query)
     reviews = result.scalars().all()
 
+    # Batch-load region names
+    review_region_codes = list({
+        json.loads(r.submitted_data).get("region_code")
+        for r in reviews
+        if r.submitted_data
+    } - {None})
+    if review_region_codes:
+        rn_result = await session.execute(
+            select(Region.code, Region.name).where(Region.code.in_(review_region_codes))
+        )
+        review_region_map = {r.code: r.name for r in rn_result}
+    else:
+        review_region_map = {}
+
+    now_utc = datetime.utcnow()
+
     items = []
     for r in reviews:
         submitted_data = json.loads(r.submitted_data) if r.submitted_data else {}
@@ -123,7 +139,7 @@ async def list_reviews(
         if r.sla_deadline:
             try:
                 deadline = datetime.fromisoformat(r.sla_deadline)
-                sla_remaining = (deadline - datetime.utcnow()).total_seconds() / 3600
+                sla_remaining = (deadline - now_utc).total_seconds() / 3600
                 if sla_remaining < 0:
                     sla_status = "overdue"
                 elif sla_remaining < 4:
@@ -131,14 +147,9 @@ async def list_reviews(
             except ValueError:
                 pass
 
-        # 获取地区名称
-        region_name = None
+        # 获取地区名称（已批量加载）
         region_code_val = submitted_data.get("region_code")
-        if region_code_val:
-            region_result = await session.execute(
-                select(Region.name).where(Region.code == region_code_val)
-            )
-            region_name = region_result.scalar_one_or_none()
+        region_name = review_region_map.get(region_code_val) if region_code_val else None
 
         items.append(ReviewListResponse(
             review_id=r.review_id,

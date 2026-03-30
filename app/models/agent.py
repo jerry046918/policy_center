@@ -1,5 +1,5 @@
 """Agent 认证凭据模型"""
-from sqlalchemy import Column, Text, Integer
+from sqlalchemy import Column, Text, Integer, Index
 from app.database import Base
 from datetime import datetime
 import uuid
@@ -38,3 +38,8 @@ class User(Base):
     is_active = Column(Integer, default=1)
     last_login_at = Column(Text)
     created_at = Column(Text, default=lambda: datetime.utcnow().isoformat())
+
+
+# Indexes for common query patterns
+Index('ix_agent_credentials_api_key_hash', AgentCredential.api_key_hash, unique=True)
+Index('ix_users_username', User.username, unique=True)

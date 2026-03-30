@@ -106,6 +106,22 @@ async def _migrate_add_missing_columns():
                     # 可能表本身也不存在（create_all 会创建），忽略
                     logger.debug(f"Migration skip {table}.{column}: {e}")
 
+        # Ensure indexes exist (CREATE INDEX IF NOT EXISTS is idempotent)
+        index_ddls = [
+            "CREATE INDEX IF NOT EXISTS ix_policies_region_type_start ON policies (region_code, policy_type, effective_start)",
+            "CREATE INDEX IF NOT EXISTS ix_policies_status_deleted ON policies (status, deleted_at)",
+            "CREATE INDEX IF NOT EXISTS ix_policies_policy_year ON policies (policy_year)",
+            "CREATE UNIQUE INDEX IF NOT EXISTS ix_agent_credentials_api_key_hash ON agent_credentials (api_key_hash)",
+            "CREATE INDEX IF NOT EXISTS ix_review_queue_status ON review_queue (status)",
+            "CREATE INDEX IF NOT EXISTS ix_review_queue_submitted_by ON review_queue (submitted_by)",
+            "CREATE INDEX IF NOT EXISTS ix_review_queue_sla_deadline ON review_queue (sla_deadline)",
+        ]
+        for ddl in index_ddls:
+            try:
+                await conn.execute(text(ddl))
+            except Exception as e:
+                logger.debug(f"Index migration skip: {e}")
+
 
 async def init_db():
     """初始化数据库（创建表）"""

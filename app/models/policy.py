@@ -1,5 +1,5 @@
 """政策模型"""
-from sqlalchemy import Column, Text, Integer, ForeignKey
+from sqlalchemy import Column, Text, Integer, ForeignKey, Index
 from datetime import datetime
 from app.database import Base
 import uuid
@@ -39,6 +39,13 @@ class Policy(Base):
 
     deleted_at = Column(Text)
     deleted_by = Column(Text)
+
+
+
+# Indexes for common query patterns
+Index('ix_policies_region_type_start', Policy.region_code, Policy.policy_type, Policy.effective_start)
+Index('ix_policies_status_deleted', Policy.status, Policy.deleted_at)
+Index('ix_policies_policy_year', Policy.policy_year)
 
 
 class PolicySocialInsurance(Base):

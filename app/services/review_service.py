@@ -862,55 +862,65 @@ class ReviewService:
         }
 
     async def get_review_stats(self) -> Dict[str, Any]:
-        """获取审核统计"""
-        status_counts = {}
-        for status in ["pending", "claimed", "approved", "rejected", "needs_clarification"]:
-            result = await self.session.execute(
-                select(ReviewQueue).where(ReviewQueue.status == status)
-            )
-            reviews = result.scalars().all()
-            status_counts[status] = len(reviews)
+        """获取审核统计（使用 GROUP BY 避免多次全表扫描）"""
+        from sqlalchemy import func as sqlfunc
 
-        priority_counts = {}
-        for priority in ["urgent", "high", "normal", "low"]:
-            result = await self.session.execute(
-                select(ReviewQueue).where(
-                    and_(
-                        ReviewQueue.status.in_(["pending", "claimed"]),
-                        ReviewQueue.priority == priority
-                    )
-                )
-            )
-            priority_counts[priority] = len(result.scalars().all())
-
-        risk_counts = {}
-        for risk in ["low", "medium", "high"]:
-            result = await self.session.execute(
-                select(ReviewQueue).where(
-                    ReviewQueue.status.in_(["pending", "claimed"]),
-                    ReviewQueue.risk_level == risk
-                )
-            )
-            risk_counts[risk] = len(result.scalars().all())
-
-        now = datetime.utcnow()
-        result = await self.session.execute(
-            select(ReviewQueue).where(
-                ReviewQueue.status.in_(["pending", "claimed"]),
-            )
+        # Single query: count by status
+        rows = await self.session.execute(
+            select(ReviewQueue.status, sqlfunc.count().label("cnt"))
+            .group_by(ReviewQueue.status)
         )
-        pending_reviews = result.scalars().all()
+        status_counts: Dict[str, int] = {}
+        for row in rows:
+            status_counts[row.status] = row.cnt
 
+        active_statuses = ["pending", "claimed"]
+
+        # Single query: count by priority for active items
+        rows = await self.session.execute(
+            select(ReviewQueue.priority, sqlfunc.count().label("cnt"))
+            .where(ReviewQueue.status.in_(active_statuses))
+            .group_by(ReviewQueue.priority)
+        )
+        priority_counts: Dict[str, int] = {p: 0 for p in ["urgent", "high", "normal", "low"]}
+        for row in rows:
+            if row.priority in priority_counts:
+                priority_counts[row.priority] = row.cnt
+
+        # Single query: count by risk level for active items
+        rows = await self.session.execute(
+            select(ReviewQueue.risk_level, sqlfunc.count().label("cnt"))
+            .where(ReviewQueue.status.in_(active_statuses))
+            .group_by(ReviewQueue.risk_level)
+        )
+        risk_counts: Dict[str, int] = {r: 0 for r in ["low", "medium", "high"]}
+        for row in rows:
+            if row.risk_level in risk_counts:
+                risk_counts[row.risk_level] = row.cnt
+
+        # SLA: fetch only sla_deadline for active items (no need for full rows)
+        now = datetime.utcnow()
+        deadline_rows = await self.session.execute(
+            select(ReviewQueue.sla_deadline)
+            .where(ReviewQueue.status.in_(active_statuses))
+        )
         sla_overdue = 0
         sla_warning = 0
-        for r in pending_reviews:
-            if r.sla_deadline:
-                deadline = datetime.fromisoformat(r.sla_deadline)
-                remaining = (deadline - now).total_seconds() / 3600
-                if remaining < 0:
-                    sla_overdue += 1
-                elif remaining < 4:
-                    sla_warning += 1
+        for (deadline_str,) in deadline_rows:
+            if deadline_str:
+                try:
+                    deadline = datetime.fromisoformat(deadline_str)
+                    remaining = (deadline - now).total_seconds() / 3600
+                    if remaining < 0:
+                        sla_overdue += 1
+                    elif remaining < 4:
+                        sla_warning += 1
+                except ValueError:
+                    pass
+
+        # Ensure all expected statuses are present
+        for s in ["pending", "claimed", "approved", "rejected", "needs_clarification"]:
+            status_counts.setdefault(s, 0)
 
         return {
             "status_counts": status_counts,

@@ -1,5 +1,5 @@
 """审核队列表"""
-from sqlalchemy import Column, Text, Integer
+from sqlalchemy import Column, Text, Integer, Index
 from app.database import Base
 from datetime import datetime
 import uuid
@@ -44,3 +44,9 @@ class ReviewQueue(Base):
     submitted_by = Column(Text, nullable=False)
 
     sla_deadline = Column(Text)
+
+
+# Indexes for common query patterns
+Index('ix_review_queue_status', ReviewQueue.status)
+Index('ix_review_queue_submitted_by', ReviewQueue.submitted_by)
+Index('ix_review_queue_sla_deadline', ReviewQueue.sla_deadline)

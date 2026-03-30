@@ -95,9 +95,19 @@ async def list_policies(
         policies = result.scalars().all()
 
         service = PolicyService(session)
+
+        # Batch-load region names
+        region_codes = list({p.region_code for p in policies if p.region_code})
+        region_name_map = {}
+        if region_codes:
+            rn_result = await session.execute(
+                select(Region.name, Region.code).where(Region.code.in_(region_codes))
+            )
+            region_name_map = {r.code: r.name for r in rn_result}
+
         items = []
         for p in policies:
-            region_name = await get_region_name(session, p.region_code)
+            region_name = region_name_map.get(p.region_code)
 
             # 获取扩展数据
             ext = await service._get_extension(p.policy_id, p.policy_type)
@@ -439,6 +449,8 @@ async def activate_policy(
     current_user: UserAuth = Depends(get_current_user)
 ):
     """激活政策"""
+    if current_user.role not in ("admin", "staff"):
+        raise HTTPException(status_code=403, detail="Permission denied")
     try:
         service = PolicyService(session)
 
@@ -478,6 +490,8 @@ async def revoke_policy(
     current_user: UserAuth = Depends(get_current_user)
 ):
     """撤销政策"""
+    if current_user.role not in ("admin", "staff"):
+        raise HTTPException(status_code=403, detail="Permission denied")
     try:
         service = PolicyService(session)
 

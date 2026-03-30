@@ -41,7 +41,7 @@ class AgentResponse(BaseModel):
 
 class UserCreate(BaseModel):
     username: str
-    password: str
+    password: str = Field(..., min_length=8)
     email: Optional[str] = None
     display_name: Optional[str] = None
     role: str = "staff"
@@ -63,7 +63,7 @@ class ToggleStatusRequest(BaseModel):
 
 
 class ResetPasswordRequest(BaseModel):
-    new_password: str
+    new_password: str = Field(..., min_length=8)
 
 
 # ==================== 用户管理 ====================

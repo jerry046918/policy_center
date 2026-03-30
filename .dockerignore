@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+*.egg-info/
+.venv/
+venv/
+
+# Node
+web/node_modules/
+web/dist/
+
+# Data (db is created at runtime, regions.json is needed for init)
+data/*.db
+data/*.db-wal
+data/*.db-shm
+uploads/
+logs/
+
+# IDE / OS
+.git/
+.gitignore
+.vscode/
+.idea/
+*.swp
+*.swo
+Thumbs.db
+.DS_Store
+
+# Dev files
+.env
+.env.local
+*.md
+!requirements.txt
+.codemaker/
+skills/
+tests/
+nul

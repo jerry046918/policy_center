@@ -158,18 +158,25 @@ async def get_dashboard(
     )
     recent_rows = recent_result.fetchall()
 
+    # Batch-load region names for recent policies
+    recent_region_codes = list({p.region_code for p, si, hf in recent_rows})
+    if recent_region_codes:
+        region_rows = await session.execute(
+            select(Region.code, Region.name).where(Region.code.in_(recent_region_codes))
+        )
+        region_name_map: Dict[str, str] = {r.code: r.name for r in region_rows}
+    else:
+        region_name_map = {}
+
     recent_policies = []
     for policy, si, hf in recent_rows:
-        # 获取地区名称
-        region_name = await session.scalar(
-            select(Region.name).where(Region.code == policy.region_code)
-        )
+        region_name = region_name_map.get(policy.region_code, policy.region_code)
 
         recent_policies.append(RecentPolicy(
             policy_id=policy.policy_id,
             policy_type=policy.policy_type,
             title=policy.title,
-            region_name=region_name or policy.region_code,
+            region_name=region_name,
             region_code=policy.region_code,
             effective_start=policy.effective_start,
             status=policy.status,
@@ -192,15 +199,27 @@ async def get_dashboard(
     )
     pending_reviews = pending_result.scalars().all()
 
+    # Batch-load region names for pending reviews
+    pending_region_codes = list({
+        json.loads(r.submitted_data).get("region_code")
+        for r in pending_reviews
+        if r.submitted_data
+    } - {None})
+    if pending_region_codes:
+        pr_rows = await session.execute(
+            select(Region.code, Region.name).where(Region.code.in_(pending_region_codes))
+        )
+        pending_region_map: Dict[str, str] = {r.code: r.name for r in pr_rows}
+    else:
+        pending_region_map = {}
+
     pending_list = []
     for r in pending_reviews:
         submitted_data = json.loads(r.submitted_data) if r.submitted_data else {}
 
         # 获取地区名称
         region_code = submitted_data.get("region_code")
-        region_name = await session.scalar(
-            select(Region.name).where(Region.code == region_code)
-        ) if region_code else None
+        region_name = pending_region_map.get(region_code) if region_code else None
 
         # 计算 SLA
         sla_remaining = None
@@ -245,11 +264,19 @@ async def get_dashboard(
     )
     retro_rows = retro_result.fetchall()
 
+    # Batch-load region names for retroactive policies
+    retro_region_codes = list({p.region_code for p, si, hf in retro_rows})
+    if retro_region_codes:
+        rr_rows = await session.execute(
+            select(Region.code, Region.name).where(Region.code.in_(retro_region_codes))
+        )
+        retro_region_map: Dict[str, str] = {r.code: r.name for r in rr_rows}
+    else:
+        retro_region_map = {}
+
     retroactive_policies = []
     for policy, si, hf in retro_rows:
-        region_name = await session.scalar(
-            select(Region.name).where(Region.code == policy.region_code)
-        )
+        region_name = retro_region_map.get(policy.region_code)
 
         # Determine retroactive_start and retroactive_months from whichever extension has retroactive data
         retroactive_start = ""
