@@ -11,7 +11,7 @@ import jwt
 from app.database import get_session
 from app.models.agent import AgentCredential, User
 from app.config import settings
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from passlib.context import CryptContext
 
 router = APIRouter()

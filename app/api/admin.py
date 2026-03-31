@@ -15,7 +15,7 @@ from app.database import _build_regions_from_json
 from app.models.agent import AgentCredential, User
 from app.models.region import Region
 from app.api.auth import get_current_user, UserAuth, hash_password
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
