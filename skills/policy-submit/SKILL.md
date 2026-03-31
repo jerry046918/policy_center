@@ -1,6 +1,6 @@
 ---
 name: policy-submit
-description: Collect and submit policy data (社保基数/公积金基数/社平工资/人才政策等) to the Policy Center system via its Agent REST API. Use this skill whenever the user wants to submit (提交), add (新增), update (更新), collect (采集), or sync (录入) policy data for any Chinese province or city -- including vague requests like "帮我查下北京最新社保基数然后提交" or "submit Beijing 2025 housing fund base". Also applies when the user provides a government policy document URL or text for extraction, wants to batch-ingest policies for multiple regions, or asks to check/track submission review status (审核状态). This skill is specifically for operating on policy DATA through the Agent API -- not for developing, debugging, deploying, or modifying the Policy Center application code itself.
+description: Collect and submit policy data (社保基数/公积金基数/社平工资/人才政策等) to the Policy Center system via its Agent REST API. Use this skill whenever the user wants to submit (提交), add (新增), update (更新), collect (采集), or sync (录入) policy data for any Chinese province or city -- including vague requests like "帮我查下北京最新社保基数然后提交", "submit Beijing 2025 housing fund base", or "把这个文件里的社保数据录入系统". Also applies when the user provides a government policy document URL or text for extraction, wants to batch-ingest policies for multiple regions, asks to check/track submission review status (审核状态), or asks "这个政策有没有提交过". This skill covers the full workflow: schema fetch, data collection via web search, duplicate check, submission, and status tracking. It is specifically for operating on policy DATA through the Agent API -- not for developing, debugging, deploying, or modifying the Policy Center application code itself.
 ---
 
 # Policy Submission Skill
@@ -9,29 +9,39 @@ This skill enables you to collect policy data for Chinese provinces and cities a
 
 ## Prerequisites
 
-Before using the API, you need two environment variables. Check that they are set before making any API calls:
+Before making any API calls, you must confirm two values with the user:
 
 - `POLICY_CENTER_BASE_URL` -- the base URL of the Policy Center service (e.g. `http://localhost:8000`)
-- `POLICY_CENTER_API_KEY` -- the API key issued by an admin
+- `POLICY_CENTER_API_KEY` -- an Agent API key issued by a Policy Center admin
 
-If either is missing, ask the user to provide them. All API requests require the header `Authorization: Bearer <API_KEY>`.
+**Do not proceed until both values are confirmed.** Follow this flow:
 
-### Using the Demo Environment
+1. Check whether the environment variables `POLICY_CENTER_BASE_URL` and `POLICY_CENTER_API_KEY` are already set.
+2. If both are set, confirm them with the user before making any requests:
+   > "I'll use `<BASE_URL>` with the configured API key. Is that correct?"
+3. If either is missing, **ask the user to provide them explicitly**:
+   > "To submit policies to Policy Center, I need two things:
+   > 1. The base URL of your Policy Center instance (e.g. `http://your-server:8000`)
+   > 2. An Agent API key (an admin can generate one under Admin > API Keys)
+   >
+   > Please provide both before we proceed."
+4. Do not assume or default to any URL. Do not proceed with the demo environment unless the user explicitly asks to use it.
 
-A public demo instance is available for testing without any local setup:
+All API requests require the header `Authorization: Bearer <API_KEY>`.
+
+### Demo Environment (only when explicitly requested)
+
+If the user explicitly says they want to test with the demo instance, use:
 
 - **Base URL**: `https://uhawkrwrpffr.ap-northeast-1.clawcloudrun.com`
-- **Admin credentials**: `admin` / `admin123`
-- **Demo Agent API Key**: set by the `DEMO_AGENT_API_KEY` environment variable on the server; the admin can view it in the API Key management page (Admin > API Keys), or it can be provided directly by whoever set up the demo.
-
-To use the demo environment, set:
+- **Agent API Key**: visible in the demo admin UI under Admin > API Keys (login: `admin` / `admin123`)
 
 ```bash
 export POLICY_CENTER_BASE_URL="https://uhawkrwrpffr.ap-northeast-1.clawcloudrun.com"
 export POLICY_CENTER_API_KEY="<demo-api-key-from-admin>"
 ```
 
-**Note**: The demo instance resets all data (users, policies, submissions, API keys) every day at 03:00 Beijing time, restoring only the admin account and the fixed Demo Agent API Key. Region data and policy type definitions are preserved across resets.
+Note: the demo instance resets all data daily at 03:00 Beijing time (region data and policy type definitions are preserved). Do not use the demo environment for real policy submissions.
 
 ## CRITICAL: Character Encoding
 
@@ -82,21 +92,47 @@ Step 6: GET /api/agent/submissions               ← (optional) track review sta
 **Always call the schema endpoint first** to understand what fields are required for the policy type you are about to submit. The system supports multiple policy types, each with different fields.
 
 ```bash
-# Get schema for a specific type (response is wrapped in { "success": true, "schema": { ... } })
+# Get schema for a specific type
 curl -s -H "Authorization: Bearer ${POLICY_CENTER_API_KEY}" \
   "${POLICY_CENTER_BASE_URL}/api/agent/schema?policy_type=social_insurance&include_examples=true"
 
-# To list all available types, pass an unrecognized policy_type to trigger the fallback listing:
+# Discover all available types (built-in + any admin-created custom types):
 curl -s -H "Authorization: Bearer ${POLICY_CENTER_API_KEY}" \
   "${POLICY_CENTER_BASE_URL}/api/agent/schema?policy_type=_list_all"
 ```
 
-The response is wrapped in `{ "success": true, "schema": { ... } }`. Inside `schema` you'll find:
-- `common_fields` -- fields shared by ALL policy types (title, region_code, dates)
-- `type_specific_fields` -- fields unique to this policy type (e.g. si_upper_limit for social insurance)
-- `validation_rules` -- what checks the system runs
-- `examples` -- a complete example submission
-- `available_types` -- list of all registered policy types
+The response is `{ "success": true, "schema": { ... } }`. Inside `schema`:
+- `common_fields` -- fields shared by ALL types: `title`, `region_code`, `published_at`, `effective_start`, `effective_end`
+- `type_specific_fields` -- field descriptors unique to this type (see below for how to read them)
+- `validation_rules` -- human-readable list of checks the system runs
+- `examples` -- ready-to-use example `structured_data` + `raw_content` (use this as your payload template)
+- `available_types` -- list of every registered type with `type_code`, `type_name`, `description`
+
+#### How to read `type_specific_fields` and build your payload
+
+Each entry in `type_specific_fields` is a field descriptor object. The attributes that matter for submission:
+
+| Attribute | Meaning |
+|-----------|---------|
+| `required: true` | Must be present in `structured_data`; omitting it generates a validation warning |
+| `type` | Expected value type: `"integer"`, `"number"`, `"string"`, `"boolean"`, `"array"`, `"object"` |
+| `gt` / `ge` | Value must be greater than / greater-than-or-equal-to this number |
+| `lt` / `le` | Value must be less than / less-than-or-equal-to this number |
+| `max_length` | String must not exceed this character count |
+| `description` | Chinese label for the field (appears in reviewer UI and warning messages) |
+| `unit`, `format`, `default`, `items`, `enum` | Advisory / display only; not enforced at submission time |
+
+**The fastest way to build a correct payload**: look at `schema.examples[0].structured_data`. It is a complete, ready-to-copy example with all type-specific fields filled in. Use it as your template and replace the values with the real data you collected.
+
+#### Workflow for any policy type (built-in or custom)
+
+```
+1. GET /api/agent/schema?policy_type=<type_code>&include_examples=true
+2. Read schema.examples[0].structured_data  ← use as payload template
+3. Read schema.type_specific_fields         ← verify which fields are required
+4. Read schema.validation_rules             ← know what will trigger warnings
+5. Fill in the template with real data, then proceed to Step 1 (data collection)
+```
 
 **Built-in policy types:**
 
@@ -105,9 +141,33 @@ The response is wrapped in `{ "success": true, "schema": { ... } }`. Inside `sch
 | `social_insurance` | 社保基数 | si_upper_limit, si_lower_limit, is_retroactive, coverage_types |
 | `housing_fund` | 公积金基数 | hf_upper_limit, hf_lower_limit, is_retroactive |
 | `avg_salary` | 社会平均工资 | avg_salary_total, avg_salary_monthly, statistics_year, growth_rate |
-| `talent_policy` | 人才政策 | talent_categories, certification_requirements, required_documents |
+| `talent_policy` | 人才政策 | talent_categories, certification_requirements, required_documents, subsidy_standards, eligibility_summary, age_limit, education_requirement, service_years_required, application_channel |
 
-Additional types may be dynamically created by system administrators. Always check the schema endpoint to discover the latest available types and their fields.
+Administrators may add custom types at any time. Always check `_list_all` to discover the latest types.
+
+#### Submitting custom (admin-defined) types
+
+The submission body is identical in structure to built-in types. The only difference is that you learn the field names from `type_specific_fields` rather than from this document.
+
+Put all type-specific fields **flat inside `structured_data`**, alongside the common fields:
+
+```json
+{
+  "policy_type": "<custom_type_code>",
+  "submit_type": "new",
+  "structured_data": {
+    "title": "...",
+    "region_code": "110000",
+    "published_at": "2024-06-20",
+    "effective_start": "2024-07-01",
+    "<field_from_schema>": <value>,
+    "<another_field>": <value>
+  },
+  "raw_content": { "sources": [{ "url": "...", "extracted_text": "..." }] }
+}
+```
+
+The backend accepts any extra keys in `structured_data` and filters them down to the fields declared in the type's `field_schema`. This flat placement works for all types -- both built-in and custom.
 
 ### Step 1: Collect the policy data
 
@@ -165,62 +225,33 @@ The user may provide varying levels of detail -- from a specific URL and exact n
 
 #### Extracting Structured Data
 
-After locating the source document, extract the fields required by the schema you fetched in Step 0.
+After locating the source document, use `schema.examples[0].structured_data` (from Step 0) as your field template.
 
-**For `social_insurance` type:**
+For each field in `schema.type_specific_fields`, the descriptor includes a `search_keywords` array — these are the Chinese terms to look for in the government document to find the value for that field. For example:
 
-| Field | How to find it in the document |
-|-------|-------------------------------|
-| `title` | The full title of the policy notice |
-| `region_code` | 6-digit GB/T 2260 code -- look up from the region name |
-| `published_at` | 发布日期 / 印发日期 in the header |
+```
+type_specific_fields.si_upper_limit.search_keywords
+  → ["社保基数上限", "缴费工资基数上限", "社会保险缴费基数上限"]
+```
+
+Use these keywords directly as your extraction hints. For custom admin-defined types, the admin should have filled in `search_keywords` when creating the type — if the field is missing keywords, fall back to `description` as a search hint.
+
+**Common fields (all types) — document location hints:**
+
+| Field | Where to find it |
+|-------|-----------------|
+| `title` | The full heading / 通知标题 of the document |
+| `published_at` | 发布日期 / 印发日期 / 落款日期 |
 | `effective_start` | 自...起施行 / ...起执行 / 执行日期 |
-| `si_upper_limit` | 社保基数上限 / 缴费工资基数上限 (元/月) |
-| `si_lower_limit` | 社保基数下限 / 缴费工资基数下限 (元/月) |
-| `is_retroactive` | Set `true` if `effective_start` is **earlier** than `published_at` (see below) |
-| `retroactive_start` | The actual start date of the retroactive period (often Jan 1 or Jul 1 of the previous year) |
 
-**For `housing_fund` type** (often published in a separate document):
+**Important**: Social insurance and housing fund are **separate policy types**. If one government document contains both, submit them as two separate policies (`policy_type=social_insurance` and `policy_type=housing_fund`).
 
-| Field | How to find it in the document |
-|-------|-------------------------------|
-| `title` | The full title of the housing fund notice |
-| `region_code` | Same 6-digit GB/T 2260 code |
-| `published_at` | 发布日期 / 印发日期 |
-| `effective_start` | 自...起施行 / ...起执行 |
-| `hf_upper_limit` | 公积金缴存基数上限 (元/月) |
-| `hf_lower_limit` | 公积金缴存基数下限 (元/月) |
-| `is_retroactive` | Set `true` if `effective_start` is earlier than `published_at` |
-| `retroactive_start` | The actual start date of the retroactive period |
+**Additional parsing tips:**
 
-**Important**: Social insurance and housing fund are **separate policy types**. If a government document contains both SI and HF limits, submit them as **two separate policies** with `policy_type=social_insurance` and `policy_type=housing_fund` respectively.
+- **Retroactive policies (追溯生效)**: very common — a policy published in Sep 2024 may state it takes effect from Jul 1, 2024. Clues: `published_at > effective_start`; keywords 追溯执行 / 补缴 / 从...起补缴差额. When detected: set `is_retroactive: true`, `retroactive_start` = earliest applicable date, `priority: "urgent"`.
+- **Document number** (文号): format like 京人社发〔2024〕12号 — use Chinese brackets 〔〕.
+- **Upper limit derivation**: SI/HF upper limit is typically 300% of the local average monthly salary; lower limit is 60%.
 
-**Parsing tips for Chinese policy documents:**
-
-- **Social insurance base limits**: Keywords: 社会保险缴费基数上下限, 社保基数, 缴费工资基数. Look for "上限" (upper) and "下限" (lower) followed by numbers in 元/月.
-- **Housing fund limits**: Keywords: 住房公积金缴存基数, 公积金基数. Often in a separate document from SI limits.
-- **Effective date**: Keywords: 自...起施行, ...起执行, 执行日期. Often "自2024年7月1日起".
-- **Retroactive policies (追溯生效)**: This is very common -- a policy is published in, say, September 2024 but states it takes effect from July 1, 2024. Clues:
-  - `published_at` (e.g. 2024-09-15) is **later** than `effective_start` (e.g. 2024-07-01)
-  - Keywords: 追溯执行, 补缴, 从...起补缴差额, 自...起执行（含补缴...）
-  - Guangdong cities frequently publish in Q3-Q4 with retroactive effect from January 1
-  - When detected, set `is_retroactive: true` and `retroactive_start` to the earliest date the policy applies
-  - Also set `priority: "urgent"` or `"high"` since retroactive policies have immediate impact on back-payments
-- **Document number** (文号): Format like 京人社发〔2024〕12号. Use Chinese brackets 〔〕.
-- **Coverage types**: 养老保险, 医疗保险, 失业保险, 工伤保险, 生育保险. Default to all five.
-- **Average salary reference**: 全口径城镇单位就业人员月平均工资. Upper limit is typically 300% of this, lower limit is 60%.
-
-Common region codes:
-
-| Code | Region | Code | Region |
-|------|--------|------|--------|
-| 110000 | 北京 | 440000 | 广东 |
-| 120000 | 天津 | 440100 | 广州 |
-| 310000 | 上海 | 440300 | 深圳 |
-| 320000 | 江苏 | 500000 | 重庆 |
-| 330000 | 浙江 | 510000 | 四川 |
-
-If unsure about a region code, check the project's `data/regions.json` for the full list.
 
 ### Step 2: Check for duplicates
 
@@ -252,79 +283,13 @@ Construct and send the submission. Generate a unique `idempotency_key` using the
 
 **Remember: set `Content-Type: application/json; charset=utf-8` to preserve Chinese characters.**
 
-The `policy_type` field determines which type-specific fields are expected in `structured_data`. Use the fields defined in the schema you fetched in Step 0.
+The `policy_type` field determines which type-specific fields go in `structured_data`. Use `schema.examples[0]` from Step 0 as your payload template, then fill in the real values.
 
-#### Example: social_insurance
+**Note on `avg_salary_monthly`**: omit it and the system auto-computes `round(avg_salary_total / 12)`. Only provide it explicitly if the official document states a different monthly figure.
 
-```bash
-curl -s -X POST "${POLICY_CENTER_BASE_URL}/api/agent/submit" \
-  -H "Authorization: Bearer ${POLICY_CENTER_API_KEY}" \
-  -H "Content-Type: application/json; charset=utf-8" \
-  -d '{
-    "idempotency_key": "crawl-110000-2024-07-01-a1b2c3",
-    "policy_type": "social_insurance",
-    "submit_type": "new",
-    "structured_data": {
-      "title": "关于2024年度北京市社会保险缴费工资基数上下限的通知",
-      "region_code": "110000",
-      "published_at": "2024-06-20",
-      "effective_start": "2024-07-01",
-      "effective_end": null,
-      "si_upper_limit": 35283,
-      "si_lower_limit": 6821,
-      "is_retroactive": false,
-      "coverage_types": ["养老", "医疗", "失业", "工伤", "生育"],
-      "special_notes": null
-    },
-    "raw_content": {
-      "sources": [
-        {
-          "title": "北京市人力资源和社会保障局通知",
-          "doc_number": "京人社发〔2024〕12号",
-          "url": "https://rsj.beijing.gov.cn/actual-url-from-search",
-          "extracted_text": "经市政府批准，2024年度各项社会保险缴费工资基数上限为35283元..."
-        }
-      ]
-    },
-    "priority": "normal"
-  }'
-```
+#### Full example: retroactive social_insurance
 
-#### Example: housing_fund
-
-```bash
-curl -s -X POST "${POLICY_CENTER_BASE_URL}/api/agent/submit" \
-  -H "Authorization: Bearer ${POLICY_CENTER_API_KEY}" \
-  -H "Content-Type: application/json; charset=utf-8" \
-  -d '{
-    "idempotency_key": "crawl-110000-hf-2024-07-01-d4e5f6",
-    "policy_type": "housing_fund",
-    "submit_type": "new",
-    "structured_data": {
-      "title": "关于2024年度北京市住房公积金缴存基数上下限的通知",
-      "region_code": "110000",
-      "published_at": "2024-06-25",
-      "effective_start": "2024-07-01",
-      "hf_upper_limit": 35283,
-      "hf_lower_limit": 2420,
-      "is_retroactive": false
-    },
-    "raw_content": {
-      "sources": [
-        {
-          "title": "北京住房公积金管理中心通知",
-          "url": "https://gjj.beijing.gov.cn/actual-url-from-search",
-          "extracted_text": "2024年度住房公积金缴存基数上限为35283元，下限为2420元..."
-        }
-      ]
-    },
-    "priority": "normal"
-  }'
-```
-
-#### Example: retroactive social_insurance (追溯生效)
-
-A very common scenario: the policy is published months after the effective date. For example, Guangzhou publishes in November 2024 that SI base limits apply retroactively from July 1, 2024. Employers must back-pay the difference for July-November.
+This is the most complex scenario and covers all the fields you'll encounter. A very common case — a policy is published months after it took effect, requiring employers to back-pay the difference.
 
 ```bash
 curl -s -X POST "${POLICY_CENTER_BASE_URL}/api/agent/submit" \
@@ -347,74 +312,36 @@ curl -s -X POST "${POLICY_CENTER_BASE_URL}/api/agent/submit" \
       "special_notes": "自2024年7月起执行，7-11月差额需补缴"
     },
     "raw_content": {
-      "sources": [
-        {
-          "title": "广州市人力资源和社会保障局通知",
-          "url": "https://rsj.gz.gov.cn/actual-url-from-search",
-          "extracted_text": "经市政府批准，我市2024年度社保缴费基数上限为27501元，下限为5500元，自2024年7月1日起执行。用人单位应补缴7月至今的差额部分..."
-        }
-      ]
+      "sources": [{
+        "title": "广州市人力资源和社会保障局通知",
+        "doc_number": "穗人社发〔2024〕XX号",
+        "url": "https://rsj.gz.gov.cn/actual-url-from-search",
+        "extracted_text": "经市政府批准，我市2024年度社保缴费基数上限为27501元，下限为5500元，自2024年7月1日起执行..."
+      }]
     },
     "priority": "urgent"
   }'
 ```
 
-Key points for retroactive submissions:
-- `published_at` (2024-11-08) is **later** than `effective_start` (2024-07-01) -- this is the defining characteristic
-- `is_retroactive: true` must be set, otherwise the system will flag it as a warning
-- `retroactive_start` should be set to the earliest date the new base applies (usually equals `effective_start`)
-- Use `priority: "urgent"` because retroactive policies have immediate financial impact (employers need to back-pay)
-- Add a `special_notes` explaining the back-payment requirement
+For a **non-retroactive** submission, set `is_retroactive: false`, remove `retroactive_start`, and use `priority: "normal"` or `"high"`.
 
-#### Example: avg_salary
+#### Updating an existing policy
 
-```bash
-curl -s -X POST "${POLICY_CENTER_BASE_URL}/api/agent/submit" \
-  -H "Authorization: Bearer ${POLICY_CENTER_API_KEY}" \
-  -H "Content-Type: application/json; charset=utf-8" \
-  -d '{
-    "idempotency_key": "crawl-110000-avg-2023-b2c3d4",
-    "policy_type": "avg_salary",
-    "submit_type": "new",
-    "structured_data": {
-      "title": "关于公布2023年度北京市全口径城镇单位就业人员平均工资的通知",
-      "region_code": "110000",
-      "published_at": "2024-06-15",
-      "effective_start": "2024-07-01",
-      "avg_salary_total": 124000,
-      "avg_salary_monthly": 10333,
-      "statistics_year": 2023,
-      "growth_rate": 5.8
-    },
-    "raw_content": {
-      "sources": [
-        {
-          "url": "https://rsj.beijing.gov.cn/actual-url-from-search",
-          "extracted_text": "2023年度全口径城镇单位就业人员平均工资为124000元..."
-        }
-      ]
-    },
-    "priority": "normal"
-  }'
+When `check-duplicate` returns `is_duplicate: true`, submit as an update:
+
+```json
+{
+  "idempotency_key": "update-110000-si-2024-07-01-fix1",
+  "policy_type": "social_insurance",
+  "submit_type": "update",
+  "existing_policy_id": "<uuid-from-duplicate-check>",
+  "change_description": "修正社保基数下限，原6821更正为6921",
+  "structured_data": { "...all fields with corrected values..." },
+  "raw_content": { "..." },
+  "priority": "normal"
+}
 ```
 
-#### For updating an existing policy:
-
-```bash
-curl -s -X POST "${POLICY_CENTER_BASE_URL}/api/agent/submit" \
-  -H "Authorization: Bearer ${POLICY_CENTER_API_KEY}" \
-  -H "Content-Type: application/json; charset=utf-8" \
-  -d '{
-    "idempotency_key": "update-110000-2024-07-01-fix1",
-    "policy_type": "social_insurance",
-    "submit_type": "update",
-    "existing_policy_id": "uuid-from-duplicate-check",
-    "change_description": "修正社保基数下限，原6821更正为6921",
-    "structured_data": { ... },
-    "raw_content": { ... },
-    "priority": "normal"
-  }'
-```
 
 ### Step 5: Verify the submission
 
@@ -423,18 +350,19 @@ Check the response:
 ```json
 {
   "success": true,
-  "review_id": "rev_xxx",
+  "review_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
   "status": "pending_review",
-  "policy_id": "xxx",
+  "policy_id": "a1b2c3d4-...",
   "policy_type": "social_insurance",
   "warnings": [],
-  "estimated_review_time": "24h"
+  "estimated_review_time": "24h",
+  "message": null
 }
 ```
 
 - If `success` is true, report the `review_id` and `estimated_review_time` to the user
 - If there are `warnings`, report them -- they don't block the submission but the user should be aware
-- If the status is `already_submitted`, the same `idempotency_key` was used before; report the existing `review_id`
+- If `status` is `"already_submitted"`, the same `idempotency_key` was already processed; the `message` field (e.g. `"该政策已提交，请勿重复提交"`) explains this. Report the existing `review_id` to the user and do not resubmit.
 
 ### Step 6: Track submission status (optional)
 
@@ -443,34 +371,32 @@ curl -s -H "Authorization: Bearer ${POLICY_CENTER_API_KEY}" \
   "${POLICY_CENTER_BASE_URL}/api/agent/submissions?status=pending&limit=20"
 ```
 
-Status values: `pending`, `claimed`, `approved`, `rejected`, `needs_clarification`.
+Status values: `pending`, `claimed`, `released`, `approved`, `rejected`, `needs_clarification`.
+
+- `released` means a reviewer claimed the submission but released it back to the queue without a decision.
 
 For `needs_clarification` submissions, check the `reviewer_notes` field and help the user address the reviewer's questions.
 
-## Validation Awareness
+## Pre-submission Checklist
 
-The system automatically validates submissions. Be aware of these rules to avoid unnecessary warnings:
+Run through this before calling the submit endpoint. All warnings are non-blocking — the submission still enters the review queue — but flagged items receive closer scrutiny from reviewers.
 
-1. **Upper > Lower**: `si_upper_limit` must exceed `si_lower_limit` (for social insurance). `hf_upper_limit` must exceed `hf_lower_limit` (for housing fund).
-2. **Retroactive detection**: If `effective_start` is earlier than `published_at`, the system flags it. Set `is_retroactive: true` to acknowledge this intentionally.
-3. **Reasonable bounds**: SI base lower limits typically fall above 2,000 CNY/month, and upper limits above 35,000 may trigger warnings. HF lower limits below 1,000 or upper limits above 40,000 may also be flagged. Values outside these ranges are still accepted but receive closer review.
-4. **Change rate**: If the same region has an existing policy and the new values differ by more than 50%, it gets flagged for closer review.
-5. **Type-specific validation**: Each policy type has its own validation rules returned in the schema. Check those before submitting.
+**Encoding**
+- All Chinese text (title, special_notes, extracted_text) is readable and not garbled (`?` or mojibake → fix encoding first)
+- `Content-Type: application/json; charset=utf-8` is set
 
-Warnings don't block submission -- the policy still enters the review queue, but flagged items receive more scrutiny.
+**Fields**
+- All `required: true` fields from `schema.type_specific_fields` are present
+- All dates are `YYYY-MM-DD`
+- If `effective_start` < `published_at`: set `is_retroactive: true` and `retroactive_start`
 
-## Pre-submission Data Verification
-
-Before submitting, do a quick sanity check:
-
-1. **Encoding check**: Verify all Chinese text (title, coverage_types, special_notes, extracted_text) is readable and not garbled. If you see `?`, `??`, or mojibake, fix the encoding before submitting.
-2. **Schema compliance**: Ensure you have all required fields for the target `policy_type` as defined in the schema response from Step 0.
-3. **Upper > Lower**: `si_upper_limit > si_lower_limit` for SI; `hf_upper_limit > hf_lower_limit` for HF.
-4. **Reasonable range**: SI lower limits above 2,000 and upper limits may exceed 35,000 in larger cities; HF lower limits above 1,000.
-5. **Upper/lower ratio**: The upper limit is typically 3-5x the lower limit. A ratio above 5x is unusual.
-6. **Year-over-year change**: If you queried the previous year's policy, the annual change is typically 3-10%. Changes above 20% deserve a note in `special_notes`.
-7. **Retroactive check**: If `effective_start` < `published_at`, set `is_retroactive: true` and `retroactive_start`.
-8. **Date format**: All dates must be `YYYY-MM-DD`.
+**Value sanity (triggers warnings if violated)**
+- `si_upper_limit > si_lower_limit`; `hf_upper_limit > hf_lower_limit`
+- SI lower limit > 2,000 CNY/month; HF lower limit > 1,000 CNY/month
+- Upper/lower ratio typically 3–5×; above 5× is unusual
+- Year-over-year change typically 3–10%; above 20% add a note in `special_notes`
+- Change rate > 10% → `涨幅较高` tag; > 20% → `涨幅异常` (both non-blocking)
+- Custom type fields: check `schema.validation_rules` for type-specific bounds
 
 ## Priority Selection
 
@@ -488,16 +414,24 @@ Before submitting, do a quick sanity check:
 | 200 | Success | Process the response normally |
 | 400 | Bad request | Read the `detail` field, fix the data, retry |
 | 401 | Auth failed | API key is invalid or expired; ask the user |
-| 500 | Server error | Response has `error.code` and `error.message`; wait and retry |
+| 500 | Server error | Response has `error.code`, `error.message`, and `request_id`; wait and retry |
 
 On 500 errors, use exponential backoff: wait 2s, then 4s, then 8s before retrying.
+
+**Common 400 causes to watch for:**
+
+- `"不支持的政策类型: '...'"` -- the `policy_type` value is not recognized; call `GET /api/agent/schema?policy_type=_list_all` to get valid values.
+- `"submit_type 必须是 'new' 或 'update'"` -- only those two values are accepted; anything else is rejected.
+- `"原政策 {id} 不存在"` -- when using `submit_type: "update"`, the `existing_policy_id` was not found (policy may have been deleted between the duplicate check and the submit). Re-run the duplicate check and use the refreshed `existing_policy_id`.
+
+**Duplicate-check blind spot**: `GET /api/agent/check-duplicate` only considers policies with `status: "active"`. A submission currently sitting in the review queue (pending approval) is invisible to this check. This means two agents could both pass the duplicate check and both submit the same policy simultaneously. Reviewers will catch this, but be aware that `is_duplicate: false` does not guarantee no pending submission already exists for the same region/type/date.
 
 ## Batch Submission
 
 When the user wants to submit policies for multiple regions at once:
 
 1. Fetch the schema once (Step 0), reuse for all submissions of the same type
-2. Process each region sequentially (not in parallel) to avoid overwhelming the API
+2. Process each region sequentially rather than in parallel -- this makes it easier to detect and handle per-region errors (duplicate hits, 400 validation failures) without racing conditions on the SQLite backend
 3. Check duplicates for each one before submitting
 4. Use unique `idempotency_key` values for each submission
 5. Ensure each payload is correctly UTF-8 encoded (especially when building payloads in a loop)

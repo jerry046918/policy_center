@@ -260,13 +260,15 @@ export default function PolicyTypes() {
     "type": "integer",
     "required": true,
     "description": "金额（元）",
-    "gt": 0
+    "gt": 0,
+    "search_keywords": ["补贴金额", "奖励金额"]
   },
   "notes": {
     "type": "string",
     "required": false,
     "max_length": 1000,
-    "description": "备注"
+    "description": "备注",
+    "search_keywords": ["备注", "特别说明"]
   }
 }`
 

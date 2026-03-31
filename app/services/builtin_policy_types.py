@@ -133,28 +133,34 @@ SI_FIELD_SCHEMA = {
     "si_upper_limit": {
         "type": "integer", "unit": "元/月", "required": True,
         "description": "社保基数上限",
+        "search_keywords": ["社保基数上限", "缴费工资基数上限", "社会保险缴费基数上限"],
     },
     "si_lower_limit": {
         "type": "integer", "unit": "元/月", "required": True,
         "description": "社保基数下限",
+        "search_keywords": ["社保基数下限", "缴费工资基数下限", "社会保险缴费基数下限"],
     },
     "is_retroactive": {
         "type": "boolean", "default": False,
         "description": "是否追溯生效",
+        "search_keywords": ["追溯执行", "追溯生效", "补缴", "从...起补缴差额"],
     },
     "retroactive_start": {
         "type": "date", "format": "YYYY-MM-DD", "required": False,
         "description": "追溯生效起始日期",
+        "search_keywords": ["追溯生效起始", "自...起执行（含补缴）", "补缴起始日期"],
     },
     "coverage_types": {
         "type": "array",
         "items": {"enum": ["养老", "医疗", "失业", "工伤", "生育"]},
         "default": ["养老", "医疗", "失业", "工伤", "生育"],
         "description": "覆盖险种",
+        "search_keywords": ["养老保险", "医疗保险", "失业保险", "工伤保险", "生育保险"],
     },
     "special_notes": {
         "type": "string", "max_length": 1000, "required": False,
         "description": "特别说明",
+        "search_keywords": ["特别说明", "备注", "注意事项"],
     },
 }
 
@@ -252,22 +258,27 @@ HF_FIELD_SCHEMA = {
     "hf_upper_limit": {
         "type": "integer", "unit": "元/月", "required": True,
         "description": "公积金缴存基数上限",
+        "search_keywords": ["公积金缴存基数上限", "住房公积金基数上限", "公积金上限"],
     },
     "hf_lower_limit": {
         "type": "integer", "unit": "元/月", "required": True,
         "description": "公积金缴存基数下限",
+        "search_keywords": ["公积金缴存基数下限", "住房公积金基数下限", "公积金下限"],
     },
     "is_retroactive": {
         "type": "boolean", "default": False,
         "description": "是否追溯生效",
+        "search_keywords": ["追溯执行", "追溯生效", "补缴", "从...起补缴差额"],
     },
     "retroactive_start": {
         "type": "date", "format": "YYYY-MM-DD", "required": False,
         "description": "追溯生效起始日期",
+        "search_keywords": ["追溯生效起始", "自...起执行（含补缴）", "补缴起始日期"],
     },
     "special_notes": {
         "type": "string", "max_length": 1000, "required": False,
         "description": "特别说明",
+        "search_keywords": ["特别说明", "备注", "注意事项"],
     },
 }
 
@@ -351,34 +362,42 @@ AVG_FIELD_SCHEMA = {
     "avg_salary_total": {
         "type": "integer", "unit": "元/年", "required": True,
         "description": "全口径城镇单位就业人员平均工资",
+        "search_keywords": ["全口径城镇单位就业人员平均工资", "年平均工资", "平均工资"],
     },
     "avg_salary_monthly": {
         "type": "integer", "unit": "元/月", "required": False,
         "description": "月平均工资（自动计算）",
+        "search_keywords": ["月平均工资", "月均工资"],
     },
     "avg_salary_on_post": {
         "type": "integer", "unit": "元/年", "required": False,
         "description": "在岗职工平均工资",
+        "search_keywords": ["在岗职工平均工资", "在岗职工年均工资"],
     },
     "avg_salary_non_private": {
         "type": "integer", "unit": "元/年", "required": False,
         "description": "城镇非私营单位平均工资",
+        "search_keywords": ["城镇非私营单位平均工资", "非私营单位年均工资"],
     },
     "avg_salary_private": {
         "type": "integer", "unit": "元/年", "required": False,
         "description": "城镇私营单位平均工资",
+        "search_keywords": ["城镇私营单位平均工资", "私营单位年均工资"],
     },
     "statistics_year": {
         "type": "integer", "required": False,
         "description": "统计年度",
+        "search_keywords": ["统计年度", "数据年份", "年度"],
     },
     "growth_rate": {
         "type": "number", "unit": "%", "required": False,
         "description": "增长率",
+        "search_keywords": ["增长率", "同比增长", "涨幅"],
     },
     "special_notes": {
         "type": "string", "max_length": 1000, "required": False,
         "description": "特别说明",
+        "search_keywords": ["特别说明", "备注", "注意事项"],
     },
 }
 
@@ -477,42 +496,52 @@ TALENT_FIELD_SCHEMA = {
     "talent_categories": {
         "type": "array", "items": {"type": "string"}, "required": False,
         "description": "人才分类/层级列表",
+        "search_keywords": ["人才层次", "人才类型", "人才分类", "A类", "B类", "C类"],
     },
     "certification_requirements": {
         "type": "object", "required": False,
         "description": "认定条件（按人才类别，key=类别名, value=条件描述）",
+        "search_keywords": ["认定条件", "认定标准", "申报条件", "资格条件"],
     },
     "required_documents": {
         "type": "array", "items": {"type": "string"}, "required": False,
         "description": "所需材料清单",
+        "search_keywords": ["所需材料", "申报材料", "提交材料", "申请材料"],
     },
     "subsidy_standards": {
         "type": "object", "required": False,
         "description": "补贴标准（key=补贴类型, value=标准描述）",
+        "search_keywords": ["补贴标准", "奖励标准", "资助金额", "补助标准"],
     },
     "eligibility_summary": {
         "type": "string", "max_length": 2000, "required": False,
         "description": "申请条件概述",
+        "search_keywords": ["申请条件", "认定条件概述", "基本条件"],
     },
     "age_limit": {
         "type": "integer", "required": False,
         "description": "年龄限制",
+        "search_keywords": ["年龄要求", "年龄限制", "不超过...周岁"],
     },
     "education_requirement": {
         "type": "string", "required": False,
         "description": "学历要求",
+        "search_keywords": ["学历要求", "学位要求", "本科及以上", "硕士", "博士"],
     },
     "service_years_required": {
         "type": "integer", "required": False,
         "description": "服务年限要求（年）",
+        "search_keywords": ["服务年限", "在本市工作不少于", "劳动合同期限"],
     },
     "application_channel": {
         "type": "string", "required": False,
         "description": "申报渠道/网址",
+        "search_keywords": ["申报渠道", "申报网址", "办理方式", "线上申报"],
     },
     "special_notes": {
         "type": "string", "max_length": 1000, "required": False,
         "description": "特别说明",
+        "search_keywords": ["特别说明", "备注", "注意事项"],
     },
 }
 
