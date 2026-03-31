@@ -16,6 +16,23 @@ Before using the API, you need two environment variables. Check that they are se
 
 If either is missing, ask the user to provide them. All API requests require the header `Authorization: Bearer <API_KEY>`.
 
+### Using the Demo Environment
+
+A public demo instance is available for testing without any local setup:
+
+- **Base URL**: `https://uhawkrwrpffr.ap-northeast-1.clawcloudrun.com`
+- **Admin credentials**: `admin` / `admin123`
+- **Demo Agent API Key**: set by the `DEMO_AGENT_API_KEY` environment variable on the server; the admin can view it in the API Key management page (Admin > API Keys), or it can be provided directly by whoever set up the demo.
+
+To use the demo environment, set:
+
+```bash
+export POLICY_CENTER_BASE_URL="https://uhawkrwrpffr.ap-northeast-1.clawcloudrun.com"
+export POLICY_CENTER_API_KEY="<demo-api-key-from-admin>"
+```
+
+**Note**: The demo instance resets all data (users, policies, submissions, API keys) every day at 03:00 Beijing time, restoring only the admin account and the fixed Demo Agent API Key. Region data and policy type definitions are preserved across resets.
+
 ## CRITICAL: Character Encoding
 
 **All HTTP requests MUST use UTF-8 encoding.** Chinese characters will be permanently corrupted (replaced with `?`) if sent in any other encoding. Follow these rules strictly:
