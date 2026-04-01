@@ -193,19 +193,13 @@ policy_center/
 
 ## Agent API
 
-外部 Agent 通过 REST API 提交政策数据，提交进入人工审核队列，审核通过后发布为 active 状态。
+通过安装/skills下的policy-submit skill，可以告诉你的agent如何搜寻政策并提交到对应系统
 
-| 端点 | 方法 | 描述 |
-|------|------|------|
-| `/api/agent/schema` | GET | 获取指定类型的字段定义和校验规则 |
-| `/api/agent/check-duplicate` | GET | 检查是否已存在相同地区+日期+类型的政策 |
-| `/api/agent/policies` | GET | 查询已发布的政策 |
-| `/api/agent/submit` | POST | 提交政策数据到审核队列 |
-| `/api/agent/submissions` | GET | 跟踪提交的审核状态 |
+该skill需要两个环境变量进行工作：
+- `POLICY_CENTER_BASE_URL` -- the base URL of the Policy Center service (e.g. `http://localhost:8000`)
+- `POLICY_CENTER_API_KEY` -- an Agent API key issued by a Policy Center admin
 
-认证：`Authorization: Bearer <api_key>`
-
-详细工作流和字段说明见 [AGENTS.md](./AGENTS.md)。
+API key只能通过管理员账户登陆后，通过系统管理-API key管理创建
 
 ---
 
