@@ -187,9 +187,16 @@ async def ready():
         )
 
 
-@app.get("/", tags=["根路径"])
+# 静态文件目录（生产模式：前端构建产物由 FastAPI 托管）
+STATIC_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "web", "dist")
+
+
+@app.get("/", tags=["根路径"], include_in_schema=False)
 async def root():
-    """API 根路径"""
+    """根路径：生产模式返回前端页面，开发模式返回 API 信息"""
+    index_html = os.path.join(STATIC_DIR, "index.html")
+    if os.path.isfile(index_html):
+        return FileResponse(index_html)
     return {
         "name": settings.APP_NAME,
         "version": settings.APP_VERSION,
@@ -198,8 +205,7 @@ async def root():
     }
 
 
-# 静态文件服务（生产模式：前端构建产物由 FastAPI 托管）
-STATIC_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "web", "dist")
+# 静态资源挂载
 _assets_dir = os.path.join(STATIC_DIR, "assets")
 if os.path.isdir(STATIC_DIR):
     # 静态资源（JS/CSS/images）— only mount if the assets sub-directory exists
